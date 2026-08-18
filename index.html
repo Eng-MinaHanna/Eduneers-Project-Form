@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>استمارة تسجيل فريق المشروع</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-hover: #172554;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #cbd5e1;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --success: #16a34a;
+      --success-bg: #f0fdf4;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Cairo', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      background: var(--card-bg);
+      max-width: 760px;
+      width: 100%;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+      padding: 32px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 16px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    /* صندوق الشروط والقواعد */
+    .rules-card {
+      background-color: var(--danger-bg);
+      border: 1px solid #fecaca;
+      border-right: 5px solid var(--danger);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .rules-card h3 {
+      font-size: 15px;
+      color: var(--danger);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rules-list {
+      list-style-type: decimal;
+      padding-right: 20px;
+      font-size: 13.5px;
+      line-height: 1.8;
+      color: #991b1b;
+      font-weight: 600;
+    }
+
+    /* الحقول */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: var(--primary);
+    }
+
+    /* بيانات الأعضاء المتقابلة */
+    .members-section {
+      margin-top: 24px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .member-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 12px;
+      background: #f8fafc;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid #edf2f7;
+    }
+
+    .member-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .member-col label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .member-col input {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13.5px;
+      outline: none;
+    }
+
+    .member-col input:focus {
+      border-color: var(--primary);
+      background: #fff;
+    }
+
+    /* زر الإرسال */
+    .submit-btn {
+      width: 100%;
+      background: var(--primary);
+      color: #ffffff;
+      padding: 13px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
+
+    .submit-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .submit-btn:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    /* رسائل التنبيه */
+    .status-msg {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+      font-weight: 600;
+    }
+
+    .status-msg.success {
+      display: block;
+      background-color: var(--success-bg);
+      color: var(--success);
+      border: 1px solid #bbf7d0;
+    }
+
+    .status-msg.error {
+      display: block;
+      background-color: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+
+    @media (max-width: 600px) {
+      .member-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h1>استمارة تسجيل فريق المشروع</h1>
+      <p>يرجى إدخال بيانات الفريق بدقة والالتزام بالشروط الموضحة أدناه</p>
+    </div>
+
+    <!-- كارت القواعد والشروط -->
+    <div class="rules-card">
+      <h3>⚠️ تعليمات وشروط هامة:</h3>
+      <ol class="rules-list">
+        <li>بمجرد ملء هذه الفورم، لن يتم ولن يتم تغيير عدد أعضاء الفريق.</li>
+        <li>يرجى تسجيل المعلومات الصحيحة من الاسم بالكامل ورقم التليفون.</li>
+        <li>الرجاء اتباع تعليمات الكوردينيتور وعدم مخالفتها، وأي مخالفة سيتم المحاسبة عليها.</li>
+      </ol>
+    </div>
+
+    <form id="teamRegistrationForm">
+      <!-- اسم الفريق -->
+      <div class="form-group">
+        <label for="teamName">اسم الفريق (Team Name) *</label>
+        <input type="text" id="teamName" name="teamName" placeholder="أدخل اسم الفريق" required>
+      </div>
+
+      <!-- الأعضاء الخمسة -->
+      <div class="members-section">
+        <div class="section-title">بيانات أعضاء الفريق:</div>
+
+        <!-- العضو 1 -->
+        <div class="member-row">
+          <div class="member-col">
+            <label>اسم العضو الأول (يمين) *</label>
+            <input type="text" name="member1_name" placeholder="الاسم ثلاثي / رباعي" required>
+          </div>
+          <div class="member-col">
+            <label>رقم تليفون العضو الأول (شمال) *</label>
+            <input type="tel" name="member1_phone" placeholder="01xxxxxxxxx" required>
+          </div>
+        </div>
+
+        <!-- العضو 2 -->
+        <div class="member-row">
+          <div class="member-col">
+            <label>اسم العضو الثاني (يمين) *</label>
+            <input type="text" name="member2_name" placeholder="الاسم ثلاثي / رباعي" required>
+          </div>
+          <div class="member-col">
+            <label>رقم تليفون العضو الثاني (شمال) *</label>
+            <input type="tel" name="member2_phone" placeholder="01xxxxxxxxx" required>
+          </div>
+        </div>
+
+        <!-- العضو 3 -->
+        <div class="member-row">
+          <div class="member-col">
+            <label>اسم العضو الثالث (يمين) *</label>
+            <input type="text" name="member3_name" placeholder="الاسم ثلاثي / رباعي" required>
+          </div>
+          <div class="member-col">
+            <label>رقم تليفون العضو الثالث (شمال) *</label>
+            <input type="tel" name="member3_phone" placeholder="01xxxxxxxxx" required>
+          </div>
+        </div>
+
+        <!-- العضو 4 -->
+        <div class="member-row">
+          <div class="member-col">
+            <label>اسم العضو الرابع (يمين) *</label>
+            <input type="text" name="member4_name" placeholder="الاسم ثلاثي / رباعي" required>
+          </div>
+          <div class="member-col">
+            <label>رقم تليفون العضو الرابع (شمال) *</label>
+            <input type="tel" name="member4_phone" placeholder="01xxxxxxxxx" required>
+          </div>
+        </div>
+
+        <!-- العضو 5 -->
+        <div class="member-row">
+          <div class="member-col">
+            <label>اسم العضو الخامس (يمين) *</label>
+            <input type="text" name="member5_name" placeholder="الاسم ثلاثي / رباعي" required>
+          </div>
+          <div class="member-col">
+            <label>رقم تليفون العضو الخامس (شمال) *</label>
+            <input type="tel" name="member5_phone" placeholder="01xxxxxxxxx" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- خانة الملاحظات -->
+      <div class="form-group">
+        <label for="comments">ملاحظات أو تعليقات (اختياري):</label>
+        <textarea id="comments" name="comments" rows="3" placeholder="اكتب أي ملاحظة إضافية هنا..."></textarea>
+      </div>
+
+      <!-- زر الإرسال -->
+      <button type="submit" class="submit-btn" id="submitBtn">تسجيل وإرسال البيانات</button>
+      
+      <!-- رسالة التأكيد أو الخطأ -->
+      <div id="statusMessage" class="status-msg"></div>
+    </form>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9YRUTOhQ_Kxl_aFytWDS_nhqc-VPzthGZkmoXKOpaQve9FVCSLdI5yuo60bmYK-dxQA/exec";
+
+    const form = document.getElementById("teamRegistrationForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const statusMsg = document.getElementById("statusMessage");
+
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const dataObj = {};
+      formData.forEach((value, key) => {
+        dataObj[key] = value.trim();
+      });
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = "جاري إرسال البيانات...";
+      statusMsg.className = "status-msg";
+      statusMsg.style.display = "none";
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(dataObj)
+      })
+      .then(() => {
+        statusMsg.className = "status-msg success";
+        statusMsg.innerText = "تم تسجيل بيانات الفريق بنجاح! تم حفظ البيانات في الشيت.";
+        form.reset();
+      })
+      .catch((error) => {
+        statusMsg.className = "status-msg error";
+        statusMsg.innerText = "حدث خطأ أثناء الإرسال، يرجى المحاولة مرة أخرى.";
+        console.error("Submission Error:", error);
+      })
+      .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "تسجيل وإرسال البيانات";
+      });
+    });
+  </script>
+</body>
+</html>
