@@ -3,23 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>استمارة تسجيل فريق المشروع</title>
+  <title>استمارة تسجيل فرق المشروع</title>
+  
+  <!-- خط Cairo وأيقونات FontAwesome -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
   <style>
     :root {
-      --primary: #1e3a8a;
-      --primary-hover: #172554;
-      --bg: #f8fafc;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #dbeafe;
+      --accent: #059669;
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
       --card-bg: #ffffff;
-      --text: #0f172a;
-      --muted: #475569;
-      --border: #cbd5e1;
-      --danger: #dc2626;
-      --danger-bg: #fef2f2;
-      --success: #16a34a;
-      --success-bg: #f0fdf4;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+      --danger-light: #fef2f2;
     }
 
     * {
@@ -30,334 +34,682 @@
     }
 
     body {
-      background-color: var(--bg);
-      color: var(--text);
+      background: var(--bg-gradient);
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      padding: 20px;
+      padding: 24px 16px;
+      color: var(--text-main);
     }
 
-    .container {
+    .wizard-card {
       background: var(--card-bg);
-      max-width: 760px;
+      max-width: 780px;
       width: 100%;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-      border: 1px solid #e2e8f0;
-      padding: 32px;
+      border-radius: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
     }
 
+    /* الشريط العلوي */
     .header {
       text-align: center;
-      margin-bottom: 24px;
-      border-bottom: 2px solid #f1f5f9;
-      padding-bottom: 16px;
+      margin-bottom: 30px;
+    }
+
+    .header .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
     }
 
     .header h1 {
-      font-size: 24px;
-      font-weight: 800;
-      color: var(--primary);
-      margin-bottom: 6px;
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--text-main);
     }
 
-    .header p {
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    /* صندوق الشروط والقواعد */
-    .rules-card {
-      background-color: var(--danger-bg);
-      border: 1px solid #fecaca;
-      border-right: 5px solid var(--danger);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 24px;
-    }
-
-    .rules-card h3 {
-      font-size: 15px;
-      color: var(--danger);
-      margin-bottom: 8px;
+    /* مؤشر الخطوات (Progress Bar) */
+    .stepper {
       display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 35px;
+    }
+
+    .stepper::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 0;
+      left: 0;
+      transform: translateY(-50%);
+      height: 4px;
+      background: #e2e8f0;
+      z-index: 1;
+    }
+
+    .step-progress-bar {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+      height: 4px;
+      background: var(--primary);
+      z-index: 1;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    .step-item {
+      position: relative;
+      z-index: 2;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       gap: 6px;
     }
 
-    .rules-list {
-      list-style-type: decimal;
-      padding-right: 20px;
-      font-size: 13.5px;
-      line-height: 1.8;
-      color: #991b1b;
-      font-weight: 600;
+    .step-circle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+      color: var(--text-muted);
+      transition: all 0.3s;
     }
 
-    /* الحقول */
-    .form-group {
-      margin-bottom: 18px;
-    }
-
-    .form-group label {
-      display: block;
-      font-weight: 600;
-      font-size: 14px;
-      margin-bottom: 6px;
-      color: var(--text);
-    }
-
-    .form-group input,
-    .form-group textarea {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus {
+    .step-item.active .step-circle {
       border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 0 0 5px var(--primary-light);
     }
 
-    /* بيانات الأعضاء المتقابلة */
-    .members-section {
-      margin-top: 24px;
+    .step-item.completed .step-circle {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .step-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .step-item.active .step-label {
+      color: var(--primary);
+    }
+
+    /* شاشات الخطوات */
+    .step-content {
+      display: none;
+      animation: fadeIn 0.4s ease-in-out forwards;
+    }
+
+    .step-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* كارت الشروط والقواعد */
+    .rules-box {
+      background: var(--danger-light);
+      border: 1.5px solid #fca5a5;
+      border-radius: 16px;
+      padding: 24px;
       margin-bottom: 20px;
     }
 
-    .section-title {
+    .rules-box h3 {
+      color: #b91c1c;
       font-size: 16px;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
     }
 
-    .member-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin-bottom: 12px;
-      background: #f8fafc;
-      padding: 12px 14px;
-      border-radius: 8px;
-      border: 1px solid #edf2f7;
-    }
-
-    .member-col {
+    .rules-box ul {
+      list-style: none;
       display: flex;
       flex-direction: column;
+      gap: 12px;
     }
 
-    .member-col label {
-      font-size: 12.5px;
+    .rules-box li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 14.5px;
       font-weight: 600;
-      color: var(--muted);
-      margin-bottom: 4px;
+      color: #7f1d1d;
+      line-height: 1.6;
     }
 
-    .member-col input {
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 13.5px;
+    .rules-box li i {
+      margin-top: 4px;
+      color: var(--danger);
+    }
+
+    .checkbox-agreement {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f8fafc;
+      border: 1.5px dashed var(--border);
+      padding: 14px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .checkbox-agreement input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    /* الحقول والإدخالات */
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper i {
+      position: absolute;
+      right: 14px;
+      color: #94a3b8;
+    }
+
+    .input-wrapper input,
+    .input-wrapper textarea {
+      width: 100%;
+      padding: 12px 42px 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 14.5px;
       outline: none;
+      transition: all 0.2s;
+      background: #f8fafc;
     }
 
-    .member-col input:focus {
+    .input-wrapper input:focus,
+    .input-wrapper textarea:focus {
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 4px var(--primary-light);
+    }
+
+    /* كروت الأعضاء الخمسة */
+    .member-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+      transition: border 0.2s;
+    }
+
+    .member-card:focus-within {
       border-color: var(--primary);
       background: #fff;
     }
 
-    /* زر الإرسال */
-    .submit-btn {
-      width: 100%;
-      background: var(--primary);
-      color: #ffffff;
-      padding: 13px;
-      font-size: 16px;
+    .member-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .member-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .field-block label {
+      display: block;
+      font-size: 12.5px;
       font-weight: 700;
-      border: none;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .field-block input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
       border-radius: 8px;
+      font-size: 13.5px;
+      outline: none;
+    }
+
+    .field-block input:focus {
+      border-color: var(--primary);
+    }
+
+    /* أزرار التنقل */
+    .btn-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .btn {
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 15px;
       cursor: pointer;
-      transition: background 0.2s;
-      margin-top: 10px;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
     }
 
-    .submit-btn:hover {
-      background: var(--primary-hover);
+    .btn-prev {
+      background: #f1f5f9;
+      color: var(--text-muted);
     }
 
-    .submit-btn:disabled {
-      background: #94a3b8;
+    .btn-prev:hover {
+      background: #e2e8f0;
+      color: var(--text-main);
+    }
+
+    .btn-next, .btn-submit {
+      background: var(--primary);
+      color: #fff;
+      margin-right: auto;
+    }
+
+    .btn-next:hover, .btn-submit:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-submit {
+      background: var(--accent);
+    }
+
+    .btn-submit:hover {
+      background: #047857;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
       cursor: not-allowed;
     }
 
-    /* رسائل التنبيه */
-    .status-msg {
-      margin-top: 16px;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 14px;
+    /* شاشة النجاح التفاعلية */
+    .success-screen {
       text-align: center;
-      display: none;
+      padding: 30px 10px;
+    }
+
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      background: #dcfce7;
+      color: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      margin: 0 auto 20px;
+      animation: scaleUp 0.4s ease-out;
+    }
+
+    @keyframes scaleUp {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .success-screen h2 {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+
+    .success-screen p {
+      color: var(--text-muted);
+      font-size: 15px;
       font-weight: 600;
     }
 
-    .status-msg.success {
-      display: block;
-      background-color: var(--success-bg);
-      color: var(--success);
-      border: 1px solid #bbf7d0;
-    }
-
-    .status-msg.error {
-      display: block;
-      background-color: var(--danger-bg);
-      color: var(--danger);
-      border: 1px solid #fecaca;
-    }
-
-    @media (max-width: 600px) {
-      .member-row {
-        grid-template-columns: 1fr;
-        gap: 8px;
-      }
-      .container {
-        padding: 20px;
-      }
+    @media (max-width: 640px) {
+      .wizard-card { padding: 24px 16px; }
+      .member-grid { grid-template-columns: 1fr; gap: 8px; }
+      .step-label { display: none; }
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
+  <div class="wizard-card">
     <div class="header">
+      <span class="badge"><i class="fa-solid fa-graduation-cap"></i> نظام التسجيل المعتمد</span>
       <h1>استمارة تسجيل فريق المشروع</h1>
-      <p>يرجى إدخال بيانات الفريق بدقة والالتزام بالشروط الموضحة أدناه</p>
     </div>
 
-    <!-- كارت القواعد والشروط -->
-    <div class="rules-card">
-      <h3>⚠️ تعليمات وشروط هامة:</h3>
-      <ol class="rules-list">
-        <li>بمجرد ملء هذه الفورم، لن يتم ولن يتم تغيير عدد أعضاء الفريق.</li>
-        <li>يرجى تسجيل المعلومات الصحيحة من الاسم بالكامل ورقم التليفون.</li>
-        <li>الرجاء اتباع تعليمات الكوردينيتور وعدم مخالفتها، وأي مخالفة سيتم المحاسبة عليها.</li>
-      </ol>
+    <!-- مؤشر الخطوات -->
+    <div class="stepper" id="stepper">
+      <div class="step-progress-bar" id="progressBar"></div>
+      <div class="step-item active" data-step="1">
+        <div class="step-circle">1</div>
+        <span class="step-label">الشروط</span>
+      </div>
+      <div class="step-item" data-step="2">
+        <div class="step-circle">2</div>
+        <span class="step-label">الفريق</span>
+      </div>
+      <div class="step-item" data-step="3">
+        <div class="step-circle">3</div>
+        <span class="step-label">الأعضاء</span>
+      </div>
+      <div class="step-item" data-step="4">
+        <div class="step-circle">4</div>
+        <span class="step-label">التأكيد</span>
+      </div>
     </div>
 
-    <form id="teamRegistrationForm">
-      <!-- اسم الفريق -->
-      <div class="form-group">
-        <label for="teamName">اسم الفريق (Team Name) *</label>
-        <input type="text" id="teamName" name="teamName" placeholder="أدخل اسم الفريق" required>
-      </div>
-
-      <!-- الأعضاء الخمسة -->
-      <div class="members-section">
-        <div class="section-title">بيانات أعضاء الفريق:</div>
-
-        <!-- العضو 1 -->
-        <div class="member-row">
-          <div class="member-col">
-            <label>اسم العضو الأول (يمين) *</label>
-            <input type="text" name="member1_name" placeholder="الاسم ثلاثي / رباعي" required>
-          </div>
-          <div class="member-col">
-            <label>رقم تليفون العضو الأول (شمال) *</label>
-            <input type="tel" name="member1_phone" placeholder="01xxxxxxxxx" required>
-          </div>
-        </div>
-
-        <!-- العضو 2 -->
-        <div class="member-row">
-          <div class="member-col">
-            <label>اسم العضو الثاني (يمين) *</label>
-            <input type="text" name="member2_name" placeholder="الاسم ثلاثي / رباعي" required>
-          </div>
-          <div class="member-col">
-            <label>رقم تليفون العضو الثاني (شمال) *</label>
-            <input type="tel" name="member2_phone" placeholder="01xxxxxxxxx" required>
-          </div>
-        </div>
-
-        <!-- العضو 3 -->
-        <div class="member-row">
-          <div class="member-col">
-            <label>اسم العضو الثالث (يمين) *</label>
-            <input type="text" name="member3_name" placeholder="الاسم ثلاثي / رباعي" required>
-          </div>
-          <div class="member-col">
-            <label>رقم تليفون العضو الثالث (شمال) *</label>
-            <input type="tel" name="member3_phone" placeholder="01xxxxxxxxx" required>
-          </div>
-        </div>
-
-        <!-- العضو 4 -->
-        <div class="member-row">
-          <div class="member-col">
-            <label>اسم العضو الرابع (يمين) *</label>
-            <input type="text" name="member4_name" placeholder="الاسم ثلاثي / رباعي" required>
-          </div>
-          <div class="member-col">
-            <label>رقم تليفون العضو الرابع (شمال) *</label>
-            <input type="tel" name="member4_phone" placeholder="01xxxxxxxxx" required>
-          </div>
-        </div>
-
-        <!-- العضو 5 -->
-        <div class="member-row">
-          <div class="member-col">
-            <label>اسم العضو الخامس (يمين) *</label>
-            <input type="text" name="member5_name" placeholder="الاسم ثلاثي / رباعي" required>
-          </div>
-          <div class="member-col">
-            <label>رقم تليفون العضو الخامس (شمال) *</label>
-            <input type="tel" name="member5_phone" placeholder="01xxxxxxxxx" required>
-          </div>
-        </div>
-      </div>
-
-      <!-- خانة الملاحظات -->
-      <div class="form-group">
-        <label for="comments">ملاحظات أو تعليقات (اختياري):</label>
-        <textarea id="comments" name="comments" rows="3" placeholder="اكتب أي ملاحظة إضافية هنا..."></textarea>
-      </div>
-
-      <!-- زر الإرسال -->
-      <button type="submit" class="submit-btn" id="submitBtn">تسجيل وإرسال البيانات</button>
+    <form id="multiStepForm">
       
-      <!-- رسالة التأكيد أو الخطأ -->
-      <div id="statusMessage" class="status-msg"></div>
+      <!-- الخطوة 1: الشروط والتعليمات -->
+      <div class="step-content active" id="step1">
+        <div class="rules-box">
+          <h3><i class="fa-solid fa-triangle-exclamation"></i> الشروط والقواعد المنظمة للتسجيل:</h3>
+          <ul>
+            <li>
+              <i class="fa-solid fa-circle-xmark"></i>
+              <span><strong>تثبيت العدد:</strong> بمجرد ملء هذه الفورم، لن يتم ولن يتم تغيير عدد أعضاء الفريق نهائياً.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-circle-check"></i>
+              <span><strong>صحة البيانات:</strong> يرجى تسجيل المعلومات الصحيحة من الاسم بالكامل ورقم التليفون لضمان التواصل الرسمي.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-user-shield"></i>
+              <span><strong>تعليمات الكوردينيتور:</strong> الرجاء اتباع تعليمات الكوردينيتور وعدم مخالفتها، وأي مخالفة سيتم المحاسبة عليها.</span>
+            </li>
+          </ul>
+        </div>
+
+        <label class="checkbox-agreement">
+          <input type="checkbox" id="agreeRules">
+          <span>قرأت كافة الشروط والتعليمات أعلاه وأتعهد بالالتزام التام بها</span>
+        </label>
+
+        <div class="btn-actions">
+          <button type="button" class="btn btn-next" onclick="nextStep(2)">المتابعة لبيانات الفريق <i class="fa-solid fa-arrow-left"></i></button>
+        </div>
+      </div>
+
+      <!-- الخطوة 2: اسم الفريق -->
+      <div class="step-content" id="step2">
+        <div class="input-group">
+          <label for="teamName">اسم الفريق (Team Name) *</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-users"></i>
+            <input type="text" id="teamName" name="teamName" placeholder="أدخل اسم الفريق الرسمي" required>
+          </div>
+        </div>
+
+        <div class="btn-actions">
+          <button type="button" class="btn btn-prev" onclick="prevStep(1)"><i class="fa-solid fa-arrow-right"></i> السابق</button>
+          <button type="button" class="btn btn-next" onclick="nextStep(3)">التالي: بيانات الأعضاء <i class="fa-solid fa-arrow-left"></i></button>
+        </div>
+      </div>
+
+      <!-- الخطوة 3: بيانات الـ 5 أعضاء -->
+      <div class="step-content" id="step3">
+        <p style="font-size: 13.5px; color: var(--text-muted); font-weight: 700; margin-bottom: 14px;">
+          <i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> برجاء كتابة الاسم بالكامل في اليمين ورقم الهاتف على اليسار:
+        </p>
+
+        <!-- عضو 1 -->
+        <div class="member-card">
+          <div class="member-header"><i class="fa-solid fa-user-tie"></i> العضو الأول (قائد الفريق)</div>
+          <div class="member-grid">
+            <div class="field-block">
+              <label>الاسم بالكامل (يمين) *</label>
+              <input type="text" name="member1_name" placeholder="الاسم ثلاثي / رباعي" required>
+            </div>
+            <div class="field-block">
+              <label>رقم التليفون (شمال) *</label>
+              <input type="tel" name="member1_phone" placeholder="01xxxxxxxxx" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- عضو 2 -->
+        <div class="member-card">
+          <div class="member-header"><i class="fa-solid fa-user"></i> العضو الثاني</div>
+          <div class="member-grid">
+            <div class="field-block">
+              <label>الاسم بالكامل (يمين) *</label>
+              <input type="text" name="member2_name" placeholder="الاسم ثلاثي / رباعي" required>
+            </div>
+            <div class="field-block">
+              <label>رقم التليفون (شمال) *</label>
+              <input type="tel" name="member2_phone" placeholder="01xxxxxxxxx" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- عضو 3 -->
+        <div class="member-card">
+          <div class="member-header"><i class="fa-solid fa-user"></i> العضو الثالث</div>
+          <div class="member-grid">
+            <div class="field-block">
+              <label>الاسم بالكامل (يمين) *</label>
+              <input type="text" name="member3_name" placeholder="الاسم ثلاثي / رباعي" required>
+            </div>
+            <div class="field-block">
+              <label>رقم التليفون (شمال) *</label>
+              <input type="tel" name="member3_phone" placeholder="01xxxxxxxxx" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- عضو 4 -->
+        <div class="member-card">
+          <div class="member-header"><i class="fa-solid fa-user"></i> العضو الرابع</div>
+          <div class="member-grid">
+            <div class="field-block">
+              <label>الاسم بالكامل (يمين) *</label>
+              <input type="text" name="member4_name" placeholder="الاسم ثلاثي / رباعي" required>
+            </div>
+            <div class="field-block">
+              <label>رقم التليفون (شمال) *</label>
+              <input type="tel" name="member4_phone" placeholder="01xxxxxxxxx" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- عضو 5 -->
+        <div class="member-card">
+          <div class="member-header"><i class="fa-solid fa-user"></i> العضو الخامس</div>
+          <div class="member-grid">
+            <div class="field-block">
+              <label>الاسم بالكامل (يمين) *</label>
+              <input type="text" name="member5_name" placeholder="الاسم ثلاثي / رباعي" required>
+            </div>
+            <div class="field-block">
+              <label>رقم التليفون (شمال) *</label>
+              <input type="tel" name="member5_phone" placeholder="01xxxxxxxxx" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-actions">
+          <button type="button" class="btn btn-prev" onclick="prevStep(2)"><i class="fa-solid fa-arrow-right"></i> السابق</button>
+          <button type="button" class="btn btn-next" onclick="nextStep(4)">التالي: الملاحظات والإرسال <i class="fa-solid fa-arrow-left"></i></button>
+        </div>
+      </div>
+
+      <!-- الخطوة 4: الملاحظات والتسجيل اللحظي -->
+      <div class="step-content" id="step4">
+        <div class="input-group">
+          <label for="comments">ملاحظات أو تعليقات إضافية للكوردينيتور (اختياري)</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-comment-dots" style="top: 16px;"></i>
+            <textarea id="comments" name="comments" rows="3" placeholder="هل لديك أي استفسار أو توضيح تريد إضافته؟"></textarea>
+          </div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; font-size: 13.5px; line-height: 1.7; color: var(--text-muted);">
+          <strong style="color: var(--text-main);"><i class="fa-solid fa-bolt" style="color: #eab308;"></i> الحفظ المباشر:</strong>
+          عند الضغط على الزر أدناه، سيتم تسجيل وحفظ جميع البيانات فورياً في قاعدة البيانات المركزية.
+        </div>
+
+        <div class="btn-actions">
+          <button type="button" class="btn btn-prev" onclick="prevStep(3)"><i class="fa-solid fa-arrow-right"></i> تعديل البيانات</button>
+          <button type="submit" class="btn btn-submit" id="submitBtn">
+            <i class="fa-solid fa-cloud-arrow-up"></i> تأكيد وإرسال البيانات لحظياً
+          </button>
+        </div>
+      </div>
+
+      <!-- شاشة النجاح -->
+      <div class="step-content" id="stepSuccess">
+        <div class="success-screen">
+          <div class="success-icon"><i class="fa-solid fa-check"></i></div>
+          <h2>تم التسجيل بنجاح!</h2>
+          <p>تم حفظ بيانات فريقك لحظياً في قاعدة بيانات المشروع.</p>
+          <p style="margin-top: 10px; font-size: 13px; color: var(--text-muted);">نتمنى لكم بالتوفيق في المشروع!</p>
+        </div>
+      </div>
+
     </form>
   </div>
 
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9YRUTOhQ_Kxl_aFytWDS_nhqc-VPzthGZkmoXKOpaQve9FVCSLdI5yuo60bmYK-dxQA/exec";
 
-    const form = document.getElementById("teamRegistrationForm");
-    const submitBtn = document.getElementById("submitBtn");
-    const statusMsg = document.getElementById("statusMessage");
+    let currentStep = 1;
+    const totalSteps = 4;
 
-    form.addEventListener("submit", function(e) {
+    function updateStepper(step) {
+      document.querySelectorAll(".step-item").forEach(item => {
+        const itemStep = parseInt(item.getAttribute("data-step"));
+        item.classList.remove("active", "completed");
+        if (itemStep === step) {
+          item.classList.add("active");
+        } else if (itemStep < step) {
+          item.classList.add("completed");
+        }
+      });
+      const progressPercent = ((step - 1) / (totalSteps - 1)) * 100;
+      document.getElementById("progressBar").style.width = progressPercent + "%";
+    }
+
+    function showStep(step) {
+      document.querySelectorAll(".step-content").forEach(el => el.classList.remove("active"));
+      document.getElementById("step" + step).classList.add("active");
+      updateStepper(step);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function nextStep(step) {
+      // التحقق من الخطوة 1
+      if (currentStep === 1) {
+        const agree = document.getElementById("agreeRules").checked;
+        if (!agree) {
+          alert("يرجى الموافقة على الشروط والتعهد أولاً للمتابعة.");
+          return;
+        }
+      }
+
+      // التحقق من الخطوة 2
+      if (currentStep === 2) {
+        const teamName = document.getElementById("teamName").value.trim();
+        if (!teamName) {
+          alert("يرجى إدخال اسم الفريق.");
+          return;
+        }
+      }
+
+      // التحقق من الخطوة 3
+      if (currentStep === 3) {
+        const requiredInputs = document.querySelectorAll("#step3 input[required]");
+        for (let input of requiredInputs) {
+          if (!input.value.trim()) {
+            alert("يرجى استكمال جميع بيانات الأعضاء الـ 5 (الاسم ورقم التليفون).");
+            input.focus();
+            return;
+          }
+        }
+      }
+
+      currentStep = step;
+      showStep(currentStep);
+    }
+
+    function prevStep(step) {
+      currentStep = step;
+      showStep(currentStep);
+    }
+
+    // إرسال البيانات اللحظي
+    document.getElementById("multiStepForm").addEventListener("submit", function(e) {
       e.preventDefault();
 
-      const formData = new FormData(form);
+      const submitBtn = document.getElementById("submitBtn");
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ اللحظي...';
+
+      const formData = new FormData(this);
       const dataObj = {};
       formData.forEach((value, key) => {
         dataObj[key] = value.trim();
       });
-
-      submitBtn.disabled = true;
-      submitBtn.innerText = "جاري إرسال البيانات...";
-      statusMsg.className = "status-msg";
-      statusMsg.style.display = "none";
 
       fetch(SCRIPT_URL, {
         method: "POST",
@@ -368,18 +720,15 @@
         body: JSON.stringify(dataObj)
       })
       .then(() => {
-        statusMsg.className = "status-msg success";
-        statusMsg.innerText = "تم تسجيل بيانات الفريق بنجاح! تم حفظ البيانات في الشيت.";
-        form.reset();
+        document.getElementById("stepper").style.display = "none";
+        document.querySelectorAll(".step-content").forEach(el => el.classList.remove("active"));
+        document.getElementById("stepSuccess").classList.add("active");
       })
-      .catch((error) => {
-        statusMsg.className = "status-msg error";
-        statusMsg.innerText = "حدث خطأ أثناء الإرسال، يرجى المحاولة مرة أخرى.";
-        console.error("Submission Error:", error);
-      })
-      .finally(() => {
+      .catch((err) => {
+        alert("حدث خطأ أثناء الاتصال بقاعدة البيانات، يرجى المحاولة ثانية.");
+        console.error(err);
         submitBtn.disabled = false;
-        submitBtn.innerText = "تسجيل وإرسال البيانات";
+        submitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> إعادة المحاولة';
       });
     });
   </script>
