@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>استمارة تسجيل فرق المشروع</title>
+  <title>استمارة تسجيل فريق المشروع</title>
   
   <!-- خط Cairo وأيقونات FontAwesome -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -54,7 +54,6 @@
       overflow: hidden;
     }
 
-    /* الشريط العلوي */
     .header {
       text-align: center;
       margin-bottom: 30px;
@@ -77,7 +76,7 @@
       color: var(--text-main);
     }
 
-    /* مؤشر الخطوات (Progress Bar) */
+    /* مؤشر الخطوات */
     .stepper {
       display: flex;
       justify-content: space-between;
@@ -157,7 +156,6 @@
       color: var(--primary);
     }
 
-    /* شاشات الخطوات */
     .step-content {
       display: none;
       animation: fadeIn 0.4s ease-in-out forwards;
@@ -172,7 +170,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* كارت الشروط والقواعد */
+    /* الشروط */
     .rules-box {
       background: var(--danger-light);
       border: 1.5px solid #fca5a5;
@@ -233,7 +231,7 @@
       cursor: pointer;
     }
 
-    /* الحقول والإدخالات */
+    /* الحقول */
     .input-group {
       margin-bottom: 20px;
     }
@@ -256,9 +254,11 @@
       position: absolute;
       right: 14px;
       color: #94a3b8;
+      pointer-events: none;
     }
 
     .input-wrapper input,
+    .input-wrapper select,
     .input-wrapper textarea {
       width: 100%;
       padding: 12px 42px 12px 14px;
@@ -270,14 +270,24 @@
       background: #f8fafc;
     }
 
+    .input-wrapper select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: left 14px center;
+      background-size: 16px;
+    }
+
     .input-wrapper input:focus,
+    .input-wrapper select:focus,
     .input-wrapper textarea:focus {
       border-color: var(--primary);
       background: #fff;
       box-shadow: 0 0 0 4px var(--primary-light);
     }
 
-    /* كروت الأعضاء الخمسة */
+    /* بطاقات الأعضاء */
     .member-card {
       background: #f8fafc;
       border: 1px solid var(--border);
@@ -329,7 +339,7 @@
       border-color: var(--primary);
     }
 
-    /* أزرار التنقل */
+    /* الأزرار */
     .btn-actions {
       display: flex;
       justify-content: space-between;
@@ -385,7 +395,7 @@
       cursor: not-allowed;
     }
 
-    /* شاشة النجاح التفاعلية */
+    /* شاشة النجاح */
     .success-screen {
       text-align: center;
       padding: 30px 10px;
@@ -491,8 +501,38 @@
         </div>
       </div>
 
-      <!-- الخطوة 2: اسم الفريق -->
+      <!-- الخطوة 2: الجروب واسم الفريق -->
       <div class="step-content" id="step2">
+        <!-- اختيار الجروب -->
+        <div class="input-group">
+          <label for="group">الجروب (Group) *</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-layer-group"></i>
+            <select id="group" name="group" required>
+              <option value="" disabled selected>اختر الجروب التابع له...</option>
+              <option value="Group A">Group A</option>
+              <option value="Group B">Group B</option>
+              <option value="Group C">Group C</option>
+              <option value="Group D">Group D</option>
+              <option value="Group E">Group E</option>
+              <option value="Group F">Group F</option>
+              <option value="Group G">Group G</option>
+              <option value="Group H">Group H</option>
+              <option value="Group I">Group I</option>
+              <option value="Group J">Group J</option>
+              <option value="Group K">Group K</option>
+              <option value="Group L">Group L</option>
+              <option value="Group M">Group M</option>
+              <option value="Group N">Group N</option>
+              <option value="Group O">Group O</option>
+              <option value="Group P">Group P</option>
+              <option value="Group Q">Group Q</option>
+              <option value="Group R">Group R</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- اسم الفريق -->
         <div class="input-group">
           <label for="teamName">اسم الفريق (Team Name) *</label>
           <div class="input-wrapper">
@@ -667,16 +707,25 @@
         }
       }
 
-      // التحقق من الخطوة 2
+      // التحقق من الخطوة 2 (الجروب + اسم الفريق)
       if (currentStep === 2) {
+        const group = document.getElementById("group").value;
         const teamName = document.getElementById("teamName").value.trim();
+
+        if (!group) {
+          alert("يرجى اختيار الجروب التابع له الفريق.");
+          document.getElementById("group").focus();
+          return;
+        }
+
         if (!teamName) {
           alert("يرجى إدخال اسم الفريق.");
+          document.getElementById("teamName").focus();
           return;
         }
       }
 
-      // التحقق من الخطوة 3
+      // التحقق من الخطوة 3 (بيانات الأعضاء)
       if (currentStep === 3) {
         const requiredInputs = document.querySelectorAll("#step3 input[required]");
         for (let input of requiredInputs) {
@@ -697,7 +746,7 @@
       showStep(currentStep);
     }
 
-    // إرسال البيانات اللحظي
+    // الإرسال اللحظي المباشر
     document.getElementById("multiStepForm").addEventListener("submit", function(e) {
       e.preventDefault();
 
