@@ -206,12 +206,19 @@
       cursor: pointer;
       font-size: 14px;
       font-weight: 700;
+      transition: all 0.2s ease;
+    }
+
+    .checkbox-agreement.checkbox-error {
+      border-color: var(--danger);
+      background-color: var(--danger-light);
     }
 
     .checkbox-agreement input {
       width: 18px;
       height: 18px;
       accent-color: var(--primary);
+      cursor: pointer;
     }
 
     .input-group { margin-bottom: 20px; }
@@ -460,7 +467,7 @@
           </ul>
         </div>
 
-        <label class="checkbox-agreement">
+        <label class="checkbox-agreement" id="rulesCheckboxLabel">
           <input type="checkbox" id="agreeRules">
           <span>قرأت كافة الشروط والتعليمات أعلاه وأتعهد بالالتزام التام بها</span>
         </label>
@@ -549,7 +556,6 @@
   </div>
 
   <script>
-    // جدول إعدادات عدد الفرق لكل جروب (يمكنك تعديل أي رقم هنا بسهولة)
     var GROUPS_CONFIG = {
       "Group A": 10,
       "Group B": 10,
@@ -560,8 +566,8 @@
       "Group G": 10,
       "Group H": 10,
       "Group I": 10,
-      "Group J": 11, // من J1 إلى J11 كما طلبت
-      "Group K": 10, // من K1 إلى K10 كما طلبت
+      "Group J": 11,
+      "Group K": 10,
       "Group L": 10,
       "Group M": 10,
       "Group N": 10,
@@ -584,12 +590,13 @@
       fieldClasses: { name: "", code: "code-input", phone: "phone-input" }
     };
 
-    // استلام قائمة الفرق المحجوزة
+    // قراءة الفرق المحجوزة بشكل آمن
     var takenGroups = [];
     try {
-      <? if (typeof takenGroups !== 'undefined') { ?>
-        takenGroups = JSON.parse(<?= takenGroups ?>);
-      <? } ?>
+      var serverData = "<?!= typeof takenGroups !== 'undefined' ? takenGroups : '[]' ?>";
+      if (serverData && serverData !== "undefined") {
+        takenGroups = JSON.parse(serverData);
+      }
     } catch(e) {
       takenGroups = [];
     }
@@ -614,7 +621,8 @@
         document.querySelectorAll(".step-content").forEach(function(el) {
           el.classList.remove("active");
         });
-        document.getElementById("step" + step).classList.add("active");
+        var target = document.getElementById("step" + step);
+        if (target) target.classList.add("active");
       }
 
       function goTo(step) {
@@ -639,8 +647,14 @@
       }
 
       function validateRules() {
-        if (document.getElementById("agreeRules").checked) return true;
-        alert("يجب الموافقة على الشروط أولاً.");
+        var agree = document.getElementById("agreeRules");
+        var label = document.getElementById("rulesCheckboxLabel");
+        if (agree && agree.checked) {
+          if (label) label.classList.remove("checkbox-error");
+          return true;
+        }
+        if (label) label.classList.add("checkbox-error");
+        alert("يرجى وضع علامة (✔) للموافقة على الشروط والقواعد أولاً قبل المتابعة.");
         return false;
       }
 
@@ -682,8 +696,10 @@
       }
 
       function markError(el) {
-        el.classList.add("input-error");
-        el.focus();
+        if (el) {
+          el.classList.add("input-error");
+          el.focus();
+        }
       }
 
       function clearErrors() {
@@ -760,7 +776,6 @@
 
         var payload = collectData();
 
-        // استخدام الاتصال المباشر لـ Apps Script
         if (typeof google !== "undefined" && google.script && google.script.run) {
           google.script.run
             .withSuccessHandler(function(res) {
@@ -779,7 +794,6 @@
             })
             .submitForm(payload);
         } else {
-          // Fallback في حال التشغيل عبر fetch
           fetch(window.location.href, {
             method: "POST",
             body: JSON.stringify(payload),
@@ -836,8 +850,7 @@
       var availableCount = 0;
 
       for (var i = 1; i <= count; i++) {
-        var teamCode = letter + i; // مثل K1, K2 أو J1, J2
-        // حذف الفريق إذا كان محجوزاً مسبقاً
+        var teamCode = letter + i;
         if (takenGroups.indexOf(teamCode) === -1) {
           var opt = document.createElement("option");
           opt.value = teamCode;
@@ -877,6 +890,7 @@
 
     function initMainGroupOptions() {
       var select = document.getElementById("mainGroup");
+      if (!select) return;
       Object.keys(GROUPS_CONFIG).forEach(function(groupName) {
         var option = document.createElement("option");
         option.value = groupName;
@@ -887,6 +901,7 @@
 
     function initMemberCards() {
       var container = document.getElementById("membersContainer");
+      if (!container) return;
       var html = "";
       for (var i = 1; i <= CONFIG.memberCount; i++) {
         var label = (i === 1) ? "العضو الأول (قائد الفريق)" : "العضو " + CONFIG.arabicOrdinals[i - 1];
