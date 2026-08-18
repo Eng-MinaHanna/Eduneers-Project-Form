@@ -904,7 +904,7 @@
       if (!container) return;
       var html = "";
       for (var i = 1; i <= CONFIG.memberCount; i++) {
-        var label = (i === 1) ? "العضو الأول (قائد الفريق)" : "العضو " + CONFIG.arabicOrdinals[i - 1];
+        var label = (i === 1) ? "العضو الأول (الي من الاوائل)" : "العضو " + CONFIG.arabicOrdinals[i - 1];
         var icon = (i === 1) ? "fa-user-tie" : "fa-user";
         html += '<div class="member-card">';
         html += '<div class="member-header"><i class="fa-solid ' + icon + '"></i> ' + label + '</div>';
