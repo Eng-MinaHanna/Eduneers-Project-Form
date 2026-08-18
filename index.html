@@ -681,6 +681,8 @@
     })();
 
     var FormHandler = (function() {
+      var SUBMIT_URL = "https://script.google.com/macros/s/AKfycbw9YRUTOhQ_Kxl_aFytWDS_nhqc-VPzthGZkmoXKOpaQve9FVCSLdI5yuo60bmYK-dxQA/exec";
+
       function collectData() {
         var data = {
           group: document.getElementById("group").value,
@@ -705,24 +707,28 @@
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...';
 
-        google.script.run
-          .withSuccessHandler(function() {
-            document.querySelectorAll(".step-content").forEach(function(el) {
-              el.classList.remove("active");
-            });
-            document.getElementById("stepSuccess").classList.add("active");
-            document.querySelectorAll(".step-item").forEach(function(el) {
-              el.classList.add("completed");
-              el.classList.remove("active");
-            });
-            document.getElementById("progressBar").style.width = "100%";
-          })
-          .withFailureHandler(function(err) {
-            alert("حدث خطأ أثناء الإرسال: " + err.message);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
-          })
-          .doPost({ postData: { contents: JSON.stringify(collectData()) } });
+        fetch(SUBMIT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          body: JSON.stringify(collectData()),
+          headers: { "Content-Type": "text/plain" }
+        })
+        .then(function() {
+          document.querySelectorAll(".step-content").forEach(function(el) {
+            el.classList.remove("active");
+          });
+          document.getElementById("stepSuccess").classList.add("active");
+          document.querySelectorAll(".step-item").forEach(function(el) {
+            el.classList.add("completed");
+            el.classList.remove("active");
+          });
+          document.getElementById("progressBar").style.width = "100%";
+        })
+        .catch(function(err) {
+          alert("حدث خطأ أثناء الإرسال: " + err.message);
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
+        });
       }
 
       return { submit: submit };
