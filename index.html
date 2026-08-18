@@ -265,6 +265,13 @@
       box-shadow: 0 0 0 4px var(--primary-light);
     }
 
+    .helper-text {
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 5px;
+      color: var(--text-muted);
+    }
+
     .member-card {
       background: #f8fafc;
       border: 1.5px solid #e2e8f0;
@@ -440,7 +447,7 @@
           <ul>
             <li>
               <i class="fa-solid fa-circle-xmark" style="color: var(--danger);"></i>
-              <span><strong>تثبيت العدد:</strong> بمجرد ملء هذه الفورم، لن يتم ولن يتم تغيير عدد أعضاء الفريق نهائياً.</span>
+              <span><strong>تثبيت العدد:</strong> بمجرد ملء هذه الفورم، لن يتم تغيير عدد أعضاء الفريق نهائياً.</span>
             </li>
             <li>
               <i class="fa-solid fa-circle-check" style="color: var(--accent);"></i>
@@ -448,7 +455,7 @@
             </li>
             <li>
               <i class="fa-solid fa-user-shield" style="color: var(--primary);"></i>
-              <span><strong>تعليمات الكوردينيتور:</strong> الرجاء اتباع تعليمات الكوردينيتور وعدم مخالفتها، وأي مخالفة سيتم المحاسبة عليها.</span>
+              <span><strong>أسبقية الحجز:</strong> رقم الفريق المأخوذ يتم حذفه مباشرة ولا يمكن اختياره من قِبل أي فريق آخر.</span>
             </li>
           </ul>
         </div>
@@ -465,18 +472,30 @@
 
       <!-- الخطوة 2: الجروب واسم الفريق -->
       <div class="step-content" id="step2">
+        
         <div class="input-group">
-          <label for="group">الجروب (Group) *</label>
+          <label for="mainGroup">الجروب الأساسي (Main Group) *</label>
           <div class="input-wrapper">
             <i class="fa-solid fa-layer-group"></i>
-            <select id="group" name="group" required>
-              <option value="" disabled selected>اختر الجروب التابع له...</option>
+            <select id="mainGroup" name="mainGroup" required onchange="handleMainGroupChange()">
+              <option value="" disabled selected>اختر الجروب الأساسي...</option>
             </select>
           </div>
         </div>
 
         <div class="input-group">
-          <label for="teamName">اسم الفريق (Team Name) *</label>
+          <label for="teamGroup">رمز الفريق / الجروب الفرعي (Team Group) *</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-id-badge"></i>
+            <select id="teamGroup" name="teamGroup" required disabled>
+              <option value="" disabled selected>يرجى اختيار الجروب الأساسي أولاً...</option>
+            </select>
+          </div>
+          <div id="groupHelper" class="helper-text"></div>
+        </div>
+
+        <div class="input-group">
+          <label for="teamName">اسم الفريق المخصص (Team Name) *</label>
           <div class="input-wrapper">
             <i class="fa-solid fa-users"></i>
             <input type="text" id="teamName" name="teamName" placeholder="أدخل اسم الفريق الرسمي" required>
@@ -522,7 +541,7 @@
         <div class="success-screen">
           <div class="success-icon"><i class="fa-solid fa-check"></i></div>
           <h2 style="font-size: 20px; font-weight: 900; margin-bottom: 8px;">تم التسجيل بنجاح!</h2>
-          <p style="font-size: 14px; color: var(--text-muted); font-weight: 600;">تم حفظ بيانات فريقك في النظام. سيتم التواصل معك قريباً.</p>
+          <p style="font-size: 14px; color: var(--text-muted); font-weight: 600;">تم حجز الجروب وحفظ بيانات فريقك في النظام بنجاح.</p>
         </div>
       </div>
 
@@ -530,10 +549,30 @@
   </div>
 
   <script>
+    // جدول إعدادات عدد الفرق لكل جروب (يمكنك تعديل أي رقم هنا بسهولة)
+    var GROUPS_CONFIG = {
+      "Group A": 10,
+      "Group B": 10,
+      "Group C": 10,
+      "Group D": 10,
+      "Group E": 10,
+      "Group F": 10,
+      "Group G": 10,
+      "Group H": 10,
+      "Group I": 10,
+      "Group J": 11, // من J1 إلى J11 كما طلبت
+      "Group K": 10, // من K1 إلى K10 كما طلبت
+      "Group L": 10,
+      "Group M": 10,
+      "Group N": 10,
+      "Group O": 10,
+      "Group P": 10,
+      "Group Q": 10,
+      "Group R": 10
+    };
+
     var CONFIG = {
       memberCount: 5,
-      groupPrefix: "Group ",
-      groupCount: 18,
       arabicOrdinals: ["الأول", "الثاني", "الثالث", "الرابع", "الخامس"],
       phoneLength: 11,
       codeSuffix: "EDUR9",
@@ -544,6 +583,16 @@
       placeholders: { name: "الاسم ثلاثي / رباعي", code: "", phone: "01xxxxxxxxx" },
       fieldClasses: { name: "", code: "code-input", phone: "phone-input" }
     };
+
+    // استلام قائمة الفرق المحجوزة
+    var takenGroups = [];
+    try {
+      <? if (typeof takenGroups !== 'undefined') { ?>
+        takenGroups = JSON.parse(<?= takenGroups ?>);
+      <? } ?>
+    } catch(e) {
+      takenGroups = [];
+    }
 
     var Wizard = (function() {
       var currentStep = 1;
@@ -596,12 +645,14 @@
       }
 
       function validateTeam() {
-        var group = document.getElementById("group");
+        var mainGroup = document.getElementById("mainGroup");
+        var teamGroup = document.getElementById("teamGroup");
         var teamName = document.getElementById("teamName");
         var valid = true;
-        if (!group.value) { group.focus(); valid = false; }
-        if (!teamName.value.trim()) { teamName.focus(); valid = false; }
-        if (!valid) alert("يرجى ملء جميع الحقول المطلوبة.");
+        if (!mainGroup.value) { mainGroup.focus(); valid = false; }
+        else if (!teamGroup.value) { teamGroup.focus(); valid = false; }
+        else if (!teamName.value.trim()) { teamName.focus(); valid = false; }
+        if (!valid) alert("يرجى اختيار الجروب الأساسي، رمز الفريق، واسم الفريق.");
         return valid;
       }
 
@@ -623,7 +674,7 @@
         }
         if (!valid) {
           var msg = "يرجى تعبئة جميع الحقول بشكل صحيح.\n";
-          msg += "- الكود يجب أن يبدأ بحرف الجروب ويكون من " + CONFIG.codeNumberMin + " إلى " + CONFIG.codeNumberMax + " مثل: " + groupLetter + "1" + CONFIG.codeSuffix;
+          msg += "- الكود يجب أن يبدأ بحرف الجروب (" + groupLetter + ") ويكون من " + CONFIG.codeNumberMin + " إلى " + CONFIG.codeNumberMax + " مثل: " + groupLetter + "1" + CONFIG.codeSuffix;
           msg += "\n- أرقام التليفون يجب أن تكون " + CONFIG.phoneLength + " رقم.";
           alert(msg);
         }
@@ -649,7 +700,8 @@
         var container = document.getElementById("reviewContainer");
         var html = '<div class="review-section-title"><i class="fa-solid fa-users"></i> بيانات الفريق</div>';
         html += '<table class="review-table">';
-        html += '<tr><th>الجروب</th><td>' + escHtml(document.getElementById("group").value) + '</td></tr>';
+        html += '<tr><th>الجروب الأساسي</th><td>' + escHtml(document.getElementById("mainGroup").value) + '</td></tr>';
+        html += '<tr><th>رمز الفريق</th><td><strong style="color: var(--primary);">' + escHtml(document.getElementById("teamGroup").value) + '</strong></td></tr>';
         html += '<tr><th>اسم الفريق</th><td>' + escHtml(document.getElementById("teamName").value) + '</td></tr>';
         html += '</table>';
 
@@ -681,11 +733,10 @@
     })();
 
     var FormHandler = (function() {
-      var SUBMIT_URL = "https://script.google.com/macros/s/AKfycbw9YRUTOhQ_Kxl_aFytWDS_nhqc-VPzthGZkmoXKOpaQve9FVCSLdI5yuo60bmYK-dxQA/exec";
-
       function collectData() {
         var data = {
-          group: document.getElementById("group").value,
+          mainGroup: document.getElementById("mainGroup").value,
+          teamGroup: document.getElementById("teamGroup").value,
           teamName: document.getElementById("teamName").value.trim(),
           comments: document.getElementById("comments").value.trim()
         };
@@ -705,38 +756,105 @@
       function submit() {
         var btn = document.querySelector(".btn-submit");
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق وحفظ البيانات...';
 
-        fetch(SUBMIT_URL, {
-          method: "POST",
-          mode: "no-cors",
-          body: JSON.stringify(collectData()),
-          headers: { "Content-Type": "text/plain" }
-        })
-        .then(function() {
-          document.querySelectorAll(".step-content").forEach(function(el) {
-            el.classList.remove("active");
+        var payload = collectData();
+
+        // استخدام الاتصال المباشر لـ Apps Script
+        if (typeof google !== "undefined" && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(function(res) {
+              if (res && res.result === "success") {
+                showSuccess();
+              } else {
+                alert(res.error || "حدث خطأ أثناء التسجيل");
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
+              }
+            })
+            .withFailureHandler(function(err) {
+              alert("حدث خطأ أثناء الإرسال: " + err.message);
+              btn.disabled = false;
+              btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
+            })
+            .submitForm(payload);
+        } else {
+          // Fallback في حال التشغيل عبر fetch
+          fetch(window.location.href, {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: { "Content-Type": "text/plain" }
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(res) {
+            if (res && res.result === "success") showSuccess();
+            else throw new Error(res.error || "حدث خطأ");
+          })
+          .catch(function(err) {
+            alert("حدث خطأ: " + err.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
           });
-          document.getElementById("stepSuccess").classList.add("active");
-          document.querySelectorAll(".step-item").forEach(function(el) {
-            el.classList.add("completed");
-            el.classList.remove("active");
-          });
-          document.getElementById("progressBar").style.width = "100%";
-        })
-        .catch(function(err) {
-          alert("حدث خطأ أثناء الإرسال: " + err.message);
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
+        }
+      }
+
+      function showSuccess() {
+        document.querySelectorAll(".step-content").forEach(function(el) {
+          el.classList.remove("active");
         });
+        document.getElementById("stepSuccess").classList.add("active");
+        document.querySelectorAll(".step-item").forEach(function(el) {
+          el.classList.add("completed");
+          el.classList.remove("active");
+        });
+        document.getElementById("progressBar").style.width = "100%";
       }
 
       return { submit: submit };
     })();
 
     function getGroupLetter() {
-      var group = document.getElementById("group").value;
-      return group ? group.replace(CONFIG.groupPrefix, "") : "";
+      var group = document.getElementById("mainGroup").value;
+      return group ? group.replace("Group ", "").trim() : "";
+    }
+
+    function handleMainGroupChange() {
+      var mainGroup = document.getElementById("mainGroup").value;
+      var teamSelect = document.getElementById("teamGroup");
+      var helper = document.getElementById("groupHelper");
+      
+      teamSelect.innerHTML = '<option value="" disabled selected>اختر رمز الفريق المتاح...</option>';
+      
+      if (!mainGroup || !GROUPS_CONFIG[mainGroup]) {
+        teamSelect.disabled = true;
+        helper.textContent = "";
+        return;
+      }
+
+      var letter = getGroupLetter();
+      var count = GROUPS_CONFIG[mainGroup];
+      var availableCount = 0;
+
+      for (var i = 1; i <= count; i++) {
+        var teamCode = letter + i; // مثل K1, K2 أو J1, J2
+        // حذف الفريق إذا كان محجوزاً مسبقاً
+        if (takenGroups.indexOf(teamCode) === -1) {
+          var opt = document.createElement("option");
+          opt.value = teamCode;
+          opt.textContent = teamCode;
+          teamSelect.appendChild(opt);
+          availableCount++;
+        }
+      }
+
+      teamSelect.disabled = false;
+      if (availableCount === 0) {
+        helper.innerHTML = '<span style="color: var(--danger);"><i class="fa-solid fa-circle-xmark"></i> للأسف، جميع فرق هذا الجروب تم حجزها بالكامل!</span>';
+      } else {
+        helper.innerHTML = '<span style="color: var(--accent);"><i class="fa-solid fa-circle-check"></i> متاح <strong>' + availableCount + '</strong> من أصل ' + count + ' فرق.</span>';
+      }
+
+      updateCodePlaceholders();
     }
 
     function updateCodePlaceholders() {
@@ -757,15 +875,14 @@
       return pattern.test(value);
     }
 
-    function initGroupOptions() {
-      var select = document.getElementById("group");
-      for (var i = 1; i <= CONFIG.groupCount; i++) {
+    function initMainGroupOptions() {
+      var select = document.getElementById("mainGroup");
+      Object.keys(GROUPS_CONFIG).forEach(function(groupName) {
         var option = document.createElement("option");
-        option.value = CONFIG.groupPrefix + String.fromCharCode(64 + i);
-        option.textContent = CONFIG.groupPrefix + String.fromCharCode(64 + i);
+        option.value = groupName;
+        option.textContent = groupName;
         select.appendChild(option);
-      }
-      select.addEventListener("change", updateCodePlaceholders);
+      });
     }
 
     function initMemberCards() {
@@ -794,7 +911,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-      initGroupOptions();
+      initMainGroupOptions();
       initMemberCards();
     });
   </script>
