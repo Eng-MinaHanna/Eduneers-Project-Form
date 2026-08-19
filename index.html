@@ -556,6 +556,9 @@
   </div>
 
   <script>
+    // رابط سكربت Google Apps Script المباشر
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9YRUTOhQ_Kxl_aFytWDS_nhqc-VPzthGZkmoXKOpaQve9FVCSLdI5yuo60bmYK-dxQA/exec";
+
     var GROUPS_CONFIG = {
       "Group A": 10,
       "Group B": 10,
@@ -566,8 +569,8 @@
       "Group G": 10,
       "Group H": 10,
       "Group I": 10,
-      "Group J": 11,
-      "Group K": 10,
+      "Group J": 11, // من J1 إلى J11
+      "Group K": 10, // من K1 إلى K10
       "Group L": 10,
       "Group M": 10,
       "Group N": 10,
@@ -590,15 +593,22 @@
       fieldClasses: { name: "", code: "code-input", phone: "phone-input" }
     };
 
-    // قراءة الفرق المحجوزة بشكل آمن
     var takenGroups = [];
-    try {
-      var serverData = "<?!= typeof takenGroups !== 'undefined' ? takenGroups : '[]' ?>";
-      if (serverData && serverData !== "undefined") {
-        takenGroups = JSON.parse(serverData);
-      }
-    } catch(e) {
-      takenGroups = [];
+
+    // جلب الفرق المحجوزة من الشيت
+    function fetchTakenGroups() {
+      if (!SCRIPT_URL) return;
+      fetch(SCRIPT_URL + "?action=getTaken")
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data && data.takenGroups) {
+            takenGroups = data.takenGroups;
+            handleMainGroupChange();
+          }
+        })
+        .catch(function(err) {
+          console.warn("تعذر جلب الفرق المحجوزة:", err);
+        });
     }
 
     var Wizard = (function() {
@@ -630,6 +640,7 @@
         currentStep = step;
         showStep(step);
         updateStepper();
+        if (step === 2) fetchTakenGroups();
         if (step === 4) Review.build();
         if (step === 3) updateCodePlaceholders();
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -722,7 +733,7 @@
         html += '</table>';
 
         for (var i = 1; i <= CONFIG.memberCount; i++) {
-          var label = "عضو " + CONFIG.arabicOrdinals[i - 1];
+          var label = (i === 1) ? "العضو الأول (الي من الاوائل)" : "العضو " + CONFIG.arabicOrdinals[i - 1];
           var icon = (i === 1) ? "fa-user-tie" : "fa-user";
           html += '<div class="review-section-title"><i class="fa-solid ' + icon + '"></i> ' + label + '</div>';
           html += '<table class="review-table">';
@@ -769,14 +780,15 @@
         return el ? el.value.trim() : "";
       }
 
-    function submit() {
+      function submit() {
         var btn = document.querySelector(".btn-submit");
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق وحفظ البيانات...';
 
         var payload = collectData();
+        var targetUrl = (typeof SCRIPT_URL !== "undefined") ? SCRIPT_URL : "https://script.google.com/macros/s/AKfycbw9YRUTOhQ_Kxl_aFytWDS_nhqc-VPzthGZkmoXKOpaQve9FVCSLdI5yuo60bmYK-dxQA/exec";
 
-        fetch(SCRIPT_URL, {
+        fetch(targetUrl, {
           method: "POST",
           body: JSON.stringify(payload),
           headers: { "Content-Type": "text/plain;charset=utf-8" }
@@ -925,6 +937,7 @@
     document.addEventListener("DOMContentLoaded", function() {
       initMainGroupOptions();
       initMemberCards();
+      fetchTakenGroups();
     });
   </script>
 
