@@ -425,6 +425,7 @@
       <h1>استمارة تسجيل فريق المشروع</h1>
     </div>
 
+    <!-- مؤشر الخطوات -->
     <div class="stepper" id="stepper">
       <div class="step-progress-bar" id="progressBar"></div>
       <div class="step-item active" data-step="1">
@@ -479,12 +480,11 @@
 
       <!-- الخطوة 2: الجروب واسم الفريق -->
       <div class="step-content" id="step2">
-        
         <div class="input-group">
           <label for="mainGroup">الجروب الأساسي (Main Group) *</label>
           <div class="input-wrapper">
             <i class="fa-solid fa-layer-group"></i>
-            <select id="mainGroup" name="mainGroup" required onchange="handleMainGroupChange()">
+            <select id="mainGroup" name="mainGroup" required onchange="UI.handleMainGroupChange()">
               <option value="" disabled selected>اختر الجروب الأساسي...</option>
             </select>
           </div>
@@ -555,507 +555,477 @@
     </form>
   </div>
 
+  <!-- التطبيق البرمجي المنظم -->
   <script>
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9YRUTOhQ_Kxl_aFytWDS_nhqc-VPzthGZkmoXKOpaQve9FVCSLdI5yuo60bmYK-dxQA/exec";
+    // ==========================================
+    // 1. APP CONFIGURATION (SINGLE SOURCE OF TRUTH)
+    // ==========================================
+    const AppConfig = Object.freeze({
+      SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw9YRUTOhQ_Kxl_aFytWDS_nhqc-VPzthGZkmoXKOpaQve9FVCSLdI5yuo60bmYK-dxQA/exec",
+      STORAGE_KEY: "EDUNEERS_PROJECT_FORM_DRAFT",
+      MEMBER_COUNT: 5,
+      PHONE_LENGTH: 11,
+      CODE_SUFFIX: "EDUR9",
+      CODE_NUMBER_MIN: 1,
+      CODE_NUMBER_MAX: 60,
+      ARABIC_ORDINALS: ["الأول", "الثاني", "الثالث", "الرابع", "الخامس"],
+      GROUPS: Object.freeze({
+        "Group A": 10, "Group B": 10, "Group C": 10, "Group D": 10,
+        "Group E": 10, "Group F": 10, "Group G": 10, "Group H": 10,
+        "Group I": 10, "Group J": 11, "Group K": 10, "Group L": 10,
+        "Group M": 10, "Group N": 10, "Group O": 10, "Group P": 10,
+        "Group Q": 10, "Group R": 10
+      })
+    });
 
-    var GROUPS_CONFIG = {
-      "Group A": 11,
-      "Group B": 11,
-      "Group C": 11,
-      "Group D": 11,
-      "Group E": 11,
-      "Group F": 11,
-      "Group G": 11,
-      "Group H": 11,
-      "Group I": 11,
-      "Group J": 11,
-      "Group K": 11,
-      "Group L": 11,
-      "Group M": 11,
-      "Group N": 11,
-      "Group O": 11,
-      "Group P": 11,
-      "Group Q": 11,
-      "Group R": 11
+    // ==========================================
+    // 2. DOM CACHE (PERFORMANCE ENHANCEMENT)
+    // ==========================================
+    const DOM = {
+      form: document.getElementById("multiStepForm"),
+      progressBar: document.getElementById("progressBar"),
+      agreeRules: document.getElementById("agreeRules"),
+      rulesCheckboxLabel: document.getElementById("rulesCheckboxLabel"),
+      mainGroup: document.getElementById("mainGroup"),
+      teamGroup: document.getElementById("teamGroup"),
+      teamName: document.getElementById("teamName"),
+      groupHelper: document.getElementById("groupHelper"),
+      comments: document.getElementById("comments"),
+      membersContainer: document.getElementById("membersContainer"),
+      reviewContainer: document.getElementById("reviewContainer"),
+      stepSuccess: document.getElementById("stepSuccess"),
+      stepItems: document.querySelectorAll(".step-item"),
+      stepContents: document.querySelectorAll(".step-content"),
+      btnSubmit: document.querySelector(".btn-submit")
     };
 
-    var CONFIG = {
-      memberCount: 5,
-      arabicOrdinals: ["الأول", "الثاني", "الثالث", "الرابع", "الخامس"],
-      phoneLength: 11,
-      codeSuffix: "EDUR9",
-      codeNumberMin: 1,
-      codeNumberMax: 60,
-      fields: ["name", "code", "phone"],
-      fieldLabels: { name: "الاسم بالكامل *", code: "الكود *", phone: "رقم التليفون *" },
-      placeholders: { name: "الاسم ثلاثي / رباعي", code: "", phone: "01xxxxxxxxx" },
-      fieldClasses: { name: "", code: "code-input", phone: "phone-input" }
-    };
-
-    var takenGroups = [];
-
-    var StorageManager = (function() {
-      var STORAGE_KEY = "EDUNEERS_PROJECT_FORM_DRAFT";
-
-      function save(currentStep) {
+    // ==========================================
+    // 3. STORAGE SERVICE (PERSISTENCE LAYER)
+    // ==========================================
+    class StorageService {
+      static save(currentStep) {
         try {
-          var data = {
+          const draft = {
             step: currentStep || 1,
-            agreeRules: document.getElementById("agreeRules") ? document.getElementById("agreeRules").checked : false,
-            mainGroup: document.getElementById("mainGroup") ? document.getElementById("mainGroup").value : "",
-            teamGroup: document.getElementById("teamGroup") ? document.getElementById("teamGroup").value : "",
-            teamName: document.getElementById("teamName") ? document.getElementById("teamName").value : "",
-            comments: document.getElementById("comments") ? document.getElementById("comments").value : "",
+            agreeRules: DOM.agreeRules?.checked || false,
+            mainGroup: DOM.mainGroup?.value || "",
+            teamGroup: DOM.teamGroup?.value || "",
+            teamName: DOM.teamName?.value || "",
+            comments: DOM.comments?.value || "",
             members: {}
           };
 
-          for (var i = 1; i <= CONFIG.memberCount; i++) {
-            var nameEl = document.querySelector('[name="member' + i + '_name"]');
-            var codeEl = document.querySelector('[name="member' + i + '_code"]');
-            var phoneEl = document.querySelector('[name="member' + i + '_phone"]');
-            data.members['member' + i + '_name'] = nameEl ? nameEl.value : "";
-            data.members['member' + i + '_code'] = codeEl ? codeEl.value : "";
-            data.members['member' + i + '_phone'] = phoneEl ? phoneEl.value : "";
+          for (let i = 1; i <= AppConfig.MEMBER_COUNT; i++) {
+            draft.members[`name_${i}`] = document.querySelector(`[name="member${i}_name"]`)?.value || "";
+            draft.members[`code_${i}`] = document.querySelector(`[name="member${i}_code"]`)?.value || "";
+            draft.members[`phone_${i}`] = document.querySelector(`[name="member${i}_phone"]`)?.value || "";
           }
 
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        } catch(e) {}
+          localStorage.setItem(AppConfig.STORAGE_KEY, JSON.stringify(draft));
+        } catch (_) {}
       }
 
-      function restore() {
+      static restore() {
         try {
-          var raw = localStorage.getItem(STORAGE_KEY);
+          const raw = localStorage.getItem(AppConfig.STORAGE_KEY);
           if (!raw) return 1;
-          var data = JSON.parse(raw);
-          if (!data) return 1;
+          const draft = JSON.parse(raw);
+          if (!draft) return 1;
 
-          if (data.agreeRules && document.getElementById("agreeRules")) {
-            document.getElementById("agreeRules").checked = true;
+          if (draft.agreeRules && DOM.agreeRules) DOM.agreeRules.checked = true;
+
+          if (draft.mainGroup && DOM.mainGroup) {
+            DOM.mainGroup.value = draft.mainGroup;
+            UI.handleMainGroupChange();
+            if (draft.teamGroup && DOM.teamGroup) DOM.teamGroup.value = draft.teamGroup;
           }
 
-          if (data.mainGroup && document.getElementById("mainGroup")) {
-            document.getElementById("mainGroup").value = data.mainGroup;
-            handleMainGroupChange();
-            if (data.teamGroup && document.getElementById("teamGroup")) {
-              document.getElementById("teamGroup").value = data.teamGroup;
+          if (draft.teamName && DOM.teamName) DOM.teamName.value = draft.teamName;
+          if (draft.comments && DOM.comments) DOM.comments.value = draft.comments;
+
+          if (draft.members) {
+            for (let i = 1; i <= AppConfig.MEMBER_COUNT; i++) {
+              const nameEl = document.querySelector(`[name="member${i}_name"]`);
+              const codeEl = document.querySelector(`[name="member${i}_code"]`);
+              const phoneEl = document.querySelector(`[name="member${i}_phone"]`);
+              if (nameEl && draft.members[`name_${i}`]) nameEl.value = draft.members[`name_${i}`];
+              if (codeEl && draft.members[`code_${i}`]) codeEl.value = draft.members[`code_${i}`];
+              if (phoneEl && draft.members[`phone_${i}`]) phoneEl.value = draft.members[`phone_${i}`];
             }
           }
 
-          if (data.teamName && document.getElementById("teamName")) {
-            document.getElementById("teamName").value = data.teamName;
-          }
-
-          if (data.comments && document.getElementById("comments")) {
-            document.getElementById("comments").value = data.comments;
-          }
-
-          if (data.members) {
-            for (var i = 1; i <= CONFIG.memberCount; i++) {
-              var nameEl = document.querySelector('[name="member' + i + '_name"]');
-              var codeEl = document.querySelector('[name="member' + i + '_code"]');
-              var phoneEl = document.querySelector('[name="member' + i + '_phone"]');
-              if (nameEl && data.members['member' + i + '_name']) nameEl.value = data.members['member' + i + '_name'];
-              if (codeEl && data.members['member' + i + '_code']) codeEl.value = data.members['member' + i + '_code'];
-              if (phoneEl && data.members['member' + i + '_phone']) phoneEl.value = data.members['member' + i + '_phone'];
-            }
-          }
-
-          updateCodePlaceholders();
-          return data.step || 1;
-        } catch(e) {
+          UI.updateCodePlaceholders();
+          return draft.step || 1;
+        } catch (_) {
           return 1;
         }
       }
 
-      function clear() {
+      static clear() {
         try {
-          localStorage.removeItem(STORAGE_KEY);
-        } catch(e) {}
+          localStorage.removeItem(AppConfig.STORAGE_KEY);
+        } catch (_) {}
       }
-
-      return { save: save, restore: restore, clear: clear };
-    })();
-
-    // جلب الفرق المحجوزة مباشرة مع منع كاش المتصفح
-    function fetchTakenGroups() {
-      if (!SCRIPT_URL) return;
-      var urlWithTimestamp = SCRIPT_URL + "?action=getTaken&_t=" + new Date().getTime();
-      fetch(urlWithTimestamp)
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-          if (data && Array.isArray(data.takenGroups)) {
-            takenGroups = data.takenGroups.map(function(item) {
-              return String(item).trim().toUpperCase();
-            });
-            handleMainGroupChange();
-          }
-        })
-        .catch(function(err) {
-          console.warn("تعذر جلب الفرق المحجوزة:", err);
-        });
     }
 
-    var Wizard = (function() {
-      var currentStep = 1;
-      var totalSteps = 4;
+    // ==========================================
+    // 4. API SERVICE (NETWORK LAYER)
+    // ==========================================
+    class ApiService {
+      static takenGroupsSet = new Set();
 
-      function updateStepper() {
-        var items = document.querySelectorAll(".step-item");
-        items.forEach(function(item) {
-          var step = parseInt(item.getAttribute("data-step"));
-          item.classList.remove("active", "completed");
-          if (step === currentStep) item.classList.add("active");
-          else if (step < currentStep) item.classList.add("completed");
+      static async fetchTakenGroups() {
+        if (!AppConfig.SCRIPT_URL) return;
+        try {
+          const res = await fetch(`${AppConfig.SCRIPT_URL}?action=getTaken&_t=${Date.now()}`);
+          const data = await res.json();
+          if (data && Array.isArray(data.takenGroups)) {
+            this.takenGroupsSet = new Set(data.takenGroups.map(item => String(item).trim().toUpperCase()));
+            UI.handleMainGroupChange();
+          }
+        } catch (err) {
+          console.warn("Failed to fetch taken groups:", err);
+        }
+      }
+
+      static async submitRegistration(payload) {
+        const response = await fetch(AppConfig.SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify(payload),
+          headers: { "Content-Type": "text/plain;charset=utf-8" }
         });
-        var progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
-        document.getElementById("progressBar").style.width = progress + "%";
+
+        const rawText = await response.text();
+        let json;
+        try {
+          json = JSON.parse(rawText);
+        } catch (_) {
+          if (rawText.includes("<html") || rawText.includes("<!DOCTYPE")) {
+            throw new Error("يرجى التأكد من ضبط صلاحيات السكربت على (Anyone) في Apps Script وعمل New Version.");
+          }
+          throw new Error("استجابة غير صحيحة من السيرفر.");
+        }
+
+        if (json.result !== "success") {
+          throw new Error(json.error || "حدث خطأ أثناء التسجيل.");
+        }
+
+        return json;
+      }
+    }
+
+    // ==========================================
+    // 5. VALIDATION SERVICE (BUSINESS RULES)
+    // ==========================================
+    class ValidationService {
+      static getGroupLetter() {
+        return (DOM.mainGroup?.value || "").replace("Group ", "").trim().toUpperCase();
       }
 
-      function showStep(step) {
-        document.querySelectorAll(".step-content").forEach(function(el) {
-          el.classList.remove("active");
-        });
-        var target = document.getElementById("step" + step);
-        if (target) target.classList.add("active");
+      static isValidMemberCode(code, groupLetter) {
+        if (!groupLetter || !code) return false;
+        const pattern = new RegExp(`^${groupLetter}([1-9]|[1-5]\\d|60)${AppConfig.CODE_SUFFIX}$`, "i");
+        return pattern.test(code.trim());
       }
 
-      function goTo(step, skipValidation) {
-        if (!skipValidation && step > currentStep && !Validation.validateStep(currentStep)) return;
-        currentStep = step;
-        showStep(step);
-        updateStepper();
-        if (step === 2) fetchTakenGroups();
-        if (step === 4) Review.build();
-        if (step === 3) updateCodePlaceholders();
-        StorageManager.save(currentStep);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+      static validateStep(step) {
+        switch (step) {
+          case 1: return this.validateRules();
+          case 2: return this.validateTeam();
+          case 3: return this.validateMembers();
+          default: return true;
+        }
       }
 
-      function getCurrentStep() {
-        return currentStep;
-      }
-
-      return { goTo: goTo, getCurrentStep: getCurrentStep };
-    })();
-
-    var Validation = (function() {
-      function validateStep(step) {
-        if (step === 1) return validateRules();
-        if (step === 2) return validateTeam();
-        if (step === 3) return validateMembers();
-        return true;
-      }
-
-      function validateRules() {
-        var agree = document.getElementById("agreeRules");
-        var label = document.getElementById("rulesCheckboxLabel");
-        if (agree && agree.checked) {
-          if (label) label.classList.remove("checkbox-error");
+      static validateRules() {
+        if (DOM.agreeRules?.checked) {
+          DOM.rulesCheckboxLabel?.classList.remove("checkbox-error");
           return true;
         }
-        if (label) label.classList.add("checkbox-error");
+        DOM.rulesCheckboxLabel?.classList.add("checkbox-error");
         alert("يرجى وضع علامة (✔) للموافقة على الشروط والقواعد أولاً قبل المتابعة.");
         return false;
       }
 
-      function validateTeam() {
-        var mainGroup = document.getElementById("mainGroup");
-        var teamGroup = document.getElementById("teamGroup");
-        var teamName = document.getElementById("teamName");
-        var valid = true;
-        if (!mainGroup.value) { mainGroup.focus(); valid = false; }
-        else if (!teamGroup.value) { teamGroup.focus(); valid = false; }
-        else if (!teamName.value.trim()) { teamName.focus(); valid = false; }
+      static validateTeam() {
+        let valid = true;
+        if (!DOM.mainGroup?.value) { DOM.mainGroup?.focus(); valid = false; }
+        else if (!DOM.teamGroup?.value) { DOM.teamGroup?.focus(); valid = false; }
+        else if (!DOM.teamName?.value.trim()) { DOM.teamName?.focus(); valid = false; }
+
         if (!valid) alert("يرجى اختيار الجروب الأساسي، رمز الفريق، واسم الفريق.");
         return valid;
       }
 
-      function validateMembers() {
-        var valid = true;
-        clearErrors();
-        var groupLetter = getGroupLetter();
-        for (var i = 1; i <= CONFIG.memberCount; i++) {
-          var name = document.querySelector('[name="member' + i + '_name"]');
-          var code = document.querySelector('[name="member' + i + '_code"]');
-          var phone = document.querySelector('[name="member' + i + '_phone"]');
-          if (!name.value.trim()) { markError(name); valid = false; }
-          if (!code.value.trim()) {
-            markError(code); valid = false;
-          } else if (!isValidCode(code.value.trim(), groupLetter)) {
-            markError(code); valid = false;
+      static validateMembers() {
+        let valid = true;
+        this.clearErrors();
+        const groupLetter = this.getGroupLetter();
+
+        for (let i = 1; i <= AppConfig.MEMBER_COUNT; i++) {
+          const nameEl = document.querySelector(`[name="member${i}_name"]`);
+          const codeEl = document.querySelector(`[name="member${i}_code"]`);
+          const phoneEl = document.querySelector(`[name="member${i}_phone"]`);
+
+          if (!nameEl?.value.trim()) { this.markError(nameEl); valid = false; }
+          if (!codeEl?.value.trim() || !this.isValidMemberCode(codeEl.value, groupLetter)) {
+            this.markError(codeEl); valid = false;
           }
-          if (!phone.value.trim() || phone.value.length !== CONFIG.phoneLength) { markError(phone); valid = false; }
+          if (!phoneEl?.value.trim() || phoneEl.value.trim().length !== AppConfig.PHONE_LENGTH) {
+            this.markError(phoneEl); valid = false;
+          }
         }
+
         if (!valid) {
-          var msg = "يرجى تعبئة جميع الحقول بشكل صحيح.\n";
-          msg += "- الكود يجب أن يبدأ بحرف الجروب (" + groupLetter + ") ويكون من " + CONFIG.codeNumberMin + " إلى " + CONFIG.codeNumberMax + " مثل: " + groupLetter + "1" + CONFIG.codeSuffix;
-          msg += "\n- أرقام التليفون يجب أن تكون " + CONFIG.phoneLength + " رقم.";
-          alert(msg);
+          alert(`يرجى تعبئة جميع الحقول بشكل صحيح.\n- الكود يجب أن يبدأ بحرف الجروب (${groupLetter}) ويكون من ${AppConfig.CODE_NUMBER_MIN} إلى ${AppConfig.CODE_NUMBER_MAX} مثل: ${groupLetter}1${AppConfig.CODE_SUFFIX}\n- أرقام التليفون يجب أن تكون ${AppConfig.PHONE_LENGTH} رقم.`);
         }
         return valid;
       }
 
-      function markError(el) {
-        if (el) {
-          el.classList.add("input-error");
-          el.focus();
-        }
+      static markError(el) {
+        if (!el) return;
+        el.classList.add("input-error");
+        el.focus();
       }
 
-      function clearErrors() {
-        document.querySelectorAll(".input-error").forEach(function(el) {
-          el.classList.remove("input-error");
-        });
+      static clearErrors() {
+        document.querySelectorAll(".input-error").forEach(el => el.classList.remove("input-error"));
       }
+    }
 
-      return { validateStep: validateStep };
-    })();
-
-    var Review = (function() {
-      function build() {
-        var container = document.getElementById("reviewContainer");
-        var html = '<div class="review-section-title"><i class="fa-solid fa-users"></i> بيانات الفريق</div>';
-        html += '<table class="review-table">';
-        html += '<tr><th>الجروب الأساسي</th><td>' + escHtml(document.getElementById("mainGroup").value) + '</td></tr>';
-        html += '<tr><th>رمز الفريق</th><td><strong style="color: var(--primary);">' + escHtml(document.getElementById("teamGroup").value) + '</strong></td></tr>';
-        html += '<tr><th>اسم الفريق</th><td>' + escHtml(document.getElementById("teamName").value) + '</td></tr>';
-        html += '</table>';
-
-        for (var i = 1; i <= CONFIG.memberCount; i++) {
-          var label = (i === 1) ? "العضو الأول (الي من الاوائل)" : "العضو " + CONFIG.arabicOrdinals[i - 1];
-          var icon = (i === 1) ? "fa-user-tie" : "fa-user";
-          html += '<div class="review-section-title"><i class="fa-solid ' + icon + '"></i> ' + label + '</div>';
-          html += '<table class="review-table">';
-          html += '<tr><th>الاسم</th><td>' + escHtml(getVal("member" + i + "_name")) + '</td></tr>';
-          html += '<tr><th>الكود</th><td>' + escHtml(getVal("member" + i + "_code")) + '</td></tr>';
-          html += '<tr><th>رقم التليفون</th><td>' + escHtml(getVal("member" + i + "_phone")) + '</td></tr>';
-          html += '</table>';
-        }
-        container.innerHTML = html;
-      }
-
-      function getVal(name) {
-        var el = document.querySelector('[name="' + name + '"]');
-        return el ? el.value : "";
-      }
-
-      function escHtml(str) {
-        var div = document.createElement("div");
-        div.textContent = str;
+    // ==========================================
+    // 6. UI RENDERER & COMPONENT LAYER
+    // ==========================================
+    class UI {
+      static escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str || "";
         return div.innerHTML;
       }
 
-      return { build: build };
-    })();
+      static initMainGroupOptions() {
+        if (!DOM.mainGroup) return;
+        Object.keys(AppConfig.GROUPS).forEach(groupName => {
+          const option = document.createElement("option");
+          option.value = groupName;
+          option.textContent = groupName;
+          DOM.mainGroup.appendChild(option);
+        });
+      }
 
-    var FormHandler = (function() {
-      function collectData() {
-        var data = {
-          mainGroup: document.getElementById("mainGroup").value,
-          teamGroup: document.getElementById("teamGroup").value,
-          teamName: document.getElementById("teamName").value.trim(),
-          comments: document.getElementById("comments").value.trim()
-        };
-        for (var i = 1; i <= CONFIG.memberCount; i++) {
-          data["member" + i + "_name"] = getVal("member" + i + "_name");
-          data["member" + i + "_code"] = getVal("member" + i + "_code");
-          data["member" + i + "_phone"] = getVal("member" + i + "_phone");
+      static initMemberCards() {
+        if (!DOM.membersContainer) return;
+        let html = "";
+        for (let i = 1; i <= AppConfig.MEMBER_COUNT; i++) {
+          const label = (i === 1) ? "العضو الأول (الي من الاوائل)" : `العضو ${AppConfig.ARABIC_ORDINALS[i - 1]}`;
+          const icon = (i === 1) ? "fa-user-tie" : "fa-user";
+          html += `
+            <div class="member-card">
+              <div class="member-header"><i class="fa-solid ${icon}"></i> ${label}</div>
+              <div class="member-grid">
+                <div class="field-block">
+                  <label>الاسم بالكامل *</label>
+                  <input type="text" name="member${i}_name" placeholder="الاسم ثلاثي / رباعي" required>
+                </div>
+                <div class="field-block">
+                  <label>الكود *</label>
+                  <input type="text" name="member${i}_code" class="code-input" placeholder="" required>
+                </div>
+                <div class="field-block">
+                  <label>رقم التليفون *</label>
+                  <input type="tel" name="member${i}_phone" class="phone-input" placeholder="01xxxxxxxxx" maxlength="${AppConfig.PHONE_LENGTH}" required>
+                </div>
+              </div>
+            </div>`;
         }
-        return data;
+        DOM.membersContainer.innerHTML = html;
       }
 
-      function getVal(name) {
-        var el = document.querySelector('[name="' + name + '"]');
-        return el ? el.value.trim() : "";
-      }
+      static handleMainGroupChange() {
+        const mainGroup = DOM.mainGroup?.value;
+        const prevSelectedTeam = DOM.teamGroup?.value?.toUpperCase() || "";
 
-      function submit() {
-        var btn = document.querySelector(".btn-submit");
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق وحفظ البيانات...';
+        DOM.teamGroup.innerHTML = '<option value="" disabled selected>اختر رمز الفريق المتاح...</option>';
 
-        var payload = collectData();
-        var targetUrl = SCRIPT_URL;
+        if (!mainGroup || !AppConfig.GROUPS[mainGroup]) {
+          DOM.teamGroup.disabled = true;
+          DOM.groupHelper.textContent = "";
+          return;
+        }
 
-        fetch(targetUrl, {
-          method: "POST",
-          body: JSON.stringify(payload),
-          headers: { "Content-Type": "text/plain;charset=utf-8" }
-        })
-        .then(function(r) {
-          return r.text().then(function(text) {
-            try {
-              return JSON.parse(text);
-            } catch(e) {
-              if (text.indexOf("<html") !== -1 || text.indexOf("<!DOCTYPE") !== -1) {
-                throw new Error("يرجى التأكد من ضبط صلاحيات السكربت على (Anyone) في Apps Script وعمل New Version.");
-              }
-              throw new Error("استجابة غير صحيحة من السيرفر.");
-            }
-          });
-        })
-        .then(function(res) {
-          if (res && res.result === "success") {
-            StorageManager.clear();
-            showSuccess();
-          } else {
-            alert(res.error || "حدث خطأ أثناء التسجيل");
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
-            fetchTakenGroups();
+        const letter = ValidationService.getGroupLetter();
+        const totalCount = AppConfig.GROUPS[mainGroup];
+        let availableCount = 0;
+
+        for (let i = 1; i <= totalCount; i++) {
+          const teamCode = `${letter}${i}`.toUpperCase();
+          if (!ApiService.takenGroupsSet.has(teamCode)) {
+            const opt = document.createElement("option");
+            opt.value = teamCode;
+            opt.textContent = teamCode;
+            if (teamCode === prevSelectedTeam) opt.selected = true;
+            DOM.teamGroup.appendChild(opt);
+            availableCount++;
           }
-        })
-        .catch(function(err) {
-          alert("حدث خطأ أثناء الإرسال: " + err.message);
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
-        });
+        }
+
+        DOM.teamGroup.disabled = false;
+
+        if (availableCount === 0) {
+          DOM.groupHelper.innerHTML = '<span style="color: var(--danger);"><i class="fa-solid fa-circle-xmark"></i> للأسف، جميع فرق هذا الجروب تم حجزها بالكامل!</span>';
+        } else {
+          DOM.groupHelper.innerHTML = `<span style="color: var(--accent);"><i class="fa-solid fa-circle-check"></i> متاح <strong>${availableCount}</strong> من أصل ${totalCount} فرق.</span>`;
+        }
+
+        this.updateCodePlaceholders();
       }
 
-      function showSuccess() {
-        document.querySelectorAll(".step-content").forEach(function(el) {
-          el.classList.remove("active");
+      static updateCodePlaceholders() {
+        const letter = ValidationService.getGroupLetter();
+        const placeholder = letter ? `${letter}${AppConfig.CODE_NUMBER_MIN}-${AppConfig.CODE_NUMBER_MAX}${AppConfig.CODE_SUFFIX}` : "مثال: K1EDUR9";
+        document.querySelectorAll('[name$="_code"]').forEach(el => el.placeholder = placeholder);
+      }
+
+      static renderReviewSummary() {
+        if (!DOM.reviewContainer) return;
+        let html = `
+          <div class="review-section-title"><i class="fa-solid fa-users"></i> بيانات الفريق</div>
+          <table class="review-table">
+            <tr><th>الجروب الأساسي</th><td>${this.escapeHtml(DOM.mainGroup?.value)}</td></tr>
+            <tr><th>رمز الفريق</th><td><strong style="color: var(--primary);">${this.escapeHtml(DOM.teamGroup?.value)}</strong></td></tr>
+            <tr><th>اسم الفريق</th><td>${this.escapeHtml(DOM.teamName?.value)}</td></tr>
+          </table>`;
+
+        for (let i = 1; i <= AppConfig.MEMBER_COUNT; i++) {
+          const label = (i === 1) ? "العضو الأول (الي من الاوائل)" : `العضو ${AppConfig.ARABIC_ORDINALS[i - 1]}`;
+          const icon = (i === 1) ? "fa-user-tie" : "fa-user";
+          const name = document.querySelector(`[name="member${i}_name"]`)?.value || "";
+          const code = document.querySelector(`[name="member${i}_code"]`)?.value || "";
+          const phone = document.querySelector(`[name="member${i}_phone"]`)?.value || "";
+
+          html += `
+            <div class="review-section-title"><i class="fa-solid ${icon}"></i> ${label}</div>
+            <table class="review-table">
+              <tr><th>الاسم</th><td>${this.escapeHtml(name)}</td></tr>
+              <tr><th>الكود</th><td>${this.escapeHtml(code)}</td></tr>
+              <tr><th>رقم التليفون</th><td>${this.escapeHtml(phone)}</td></tr>
+            </table>`;
+        }
+        DOM.reviewContainer.innerHTML = html;
+      }
+    }
+
+    // ==========================================
+    // 7. WIZARD CONTROLLER (STATE MACHINE)
+    // ==========================================
+    class Wizard {
+      static currentStep = 1;
+      static totalSteps = 4;
+
+      static updateStepper() {
+        DOM.stepItems.forEach(item => {
+          const step = parseInt(item.getAttribute("data-step"), 10);
+          item.classList.remove("active", "completed");
+          if (step === this.currentStep) item.classList.add("active");
+          else if (step < this.currentStep) item.classList.add("completed");
         });
-        document.getElementById("stepSuccess").classList.add("active");
-        document.querySelectorAll(".step-item").forEach(function(el) {
+        const progress = ((this.currentStep - 1) / (this.totalSteps - 1)) * 100;
+        DOM.progressBar.style.width = `${progress}%`;
+      }
+
+      static showStep(step) {
+        DOM.stepContents.forEach(el => el.classList.remove("active"));
+        document.getElementById(`step${step}`)?.classList.add("active");
+      }
+
+      static goTo(step, skipValidation = false) {
+        if (!skipValidation && step > this.currentStep && !ValidationService.validateStep(this.currentStep)) return;
+
+        this.currentStep = step;
+        this.showStep(step);
+        this.updateStepper();
+
+        if (step === 2) ApiService.fetchTakenGroups();
+        if (step === 3) UI.updateCodePlaceholders();
+        if (step === 4) UI.renderReviewSummary();
+
+        StorageService.save(this.currentStep);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+
+    // ==========================================
+    // 8. FORM HANDLER
+    // ==========================================
+    class FormHandler {
+      static collectData() {
+        const payload = {
+          mainGroup: DOM.mainGroup?.value || "",
+          teamGroup: DOM.teamGroup?.value || "",
+          teamName: DOM.teamName?.value.trim() || "",
+          comments: DOM.comments?.value.trim() || ""
+        };
+
+        for (let i = 1; i <= AppConfig.MEMBER_COUNT; i++) {
+          payload[`member${i}_name`] = document.querySelector(`[name="member${i}_name"]`)?.value.trim() || "";
+          payload[`member${i}_code`] = document.querySelector(`[name="member${i}_code"]`)?.value.trim() || "";
+          payload[`member${i}_phone`] = document.querySelector(`[name="member${i}_phone"]`)?.value.trim() || "";
+        }
+        return payload;
+      }
+
+      static async submit() {
+        DOM.btnSubmit.disabled = true;
+        DOM.btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق وحفظ البيانات...';
+
+        try {
+          const payload = this.collectData();
+          await ApiService.submitRegistration(payload);
+
+          StorageService.clear();
+          this.showSuccessScreen();
+        } catch (err) {
+          alert(`حدث خطأ أثناء الإرسال: ${err.message}`);
+          DOM.btnSubmit.disabled = false;
+          DOM.btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
+          ApiService.fetchTakenGroups();
+        }
+      }
+
+      static showSuccessScreen() {
+        DOM.stepContents.forEach(el => el.classList.remove("active"));
+        DOM.stepSuccess?.classList.add("active");
+        DOM.stepItems.forEach(el => {
           el.classList.add("completed");
           el.classList.remove("active");
         });
-        document.getElementById("progressBar").style.width = "100%";
+        DOM.progressBar.style.width = "100%";
       }
-
-      return { submit: submit };
-    })();
-
-    function getGroupLetter() {
-      var group = document.getElementById("mainGroup").value;
-      return group ? group.replace("Group ", "").trim().toUpperCase() : "";
     }
 
-    function handleMainGroupChange() {
-      var mainGroup = document.getElementById("mainGroup").value;
-      var teamSelect = document.getElementById("teamGroup");
-      var helper = document.getElementById("groupHelper");
-      var prevSelectedTeam = teamSelect.value ? teamSelect.value.toUpperCase() : "";
-      
-      teamSelect.innerHTML = '<option value="" disabled selected>اختر رمز الفريق المتاح...</option>';
-      
-      if (!mainGroup || !GROUPS_CONFIG[mainGroup]) {
-        teamSelect.disabled = true;
-        helper.textContent = "";
-        return;
-      }
+    // ==========================================
+    // 9. APP INITIALIZATION & EVENT BINDINGS
+    // ==========================================
+    document.addEventListener("DOMContentLoaded", () => {
+      UI.initMainGroupOptions();
+      UI.initMemberCards();
 
-      var letter = getGroupLetter();
-      var count = GROUPS_CONFIG[mainGroup];
-      var availableCount = 0;
-
-      for (var i = 1; i <= count; i++) {
-        var teamCode = (letter + i).toUpperCase();
-        // إذا كان الفريق مسجل في takenGroups يتم حذفه من الاختيارات
-        if (takenGroups.indexOf(teamCode) === -1) {
-          var opt = document.createElement("option");
-          opt.value = teamCode;
-          opt.textContent = teamCode;
-          if (teamCode === prevSelectedTeam) {
-            opt.selected = true;
-          }
-          teamSelect.appendChild(opt);
-          availableCount++;
-        }
-      }
-
-      teamSelect.disabled = false;
-      if (prevSelectedTeam) {
-        for (var j = 0; j < teamSelect.options.length; j++) {
-          if (teamSelect.options[j].value === prevSelectedTeam) {
-            teamSelect.selectedIndex = j;
-            break;
-          }
-        }
-      }
-
-      if (availableCount === 0) {
-        helper.innerHTML = '<span style="color: var(--danger);"><i class="fa-solid fa-circle-xmark"></i> للأسف، جميع فرق هذا الجروب تم حجزها بالكامل!</span>';
-      } else {
-        helper.innerHTML = '<span style="color: var(--accent);"><i class="fa-solid fa-circle-check"></i> متاح <strong>' + availableCount + '</strong> من أصل ' + count + ' فرق.</span>';
-      }
-
-      updateCodePlaceholders();
-    }
-
-    function updateCodePlaceholders() {
-      var letter = getGroupLetter();
-      var placeholder = letter
-        ? letter + CONFIG.codeNumberMin + "-" + CONFIG.codeNumberMax + CONFIG.codeSuffix
-        : "مثال: K1EDUR9";
-      document.querySelectorAll('[name$="_code"]').forEach(function(el) {
-        el.placeholder = placeholder;
-      });
-    }
-
-    function isValidCode(value, groupLetter) {
-      if (!groupLetter) return false;
-      var pattern = new RegExp(
-        "^" + groupLetter + "([1-9]|[1-5]\\d|60)" + CONFIG.codeSuffix + "$", "i"
-      );
-      return pattern.test(value);
-    }
-
-    function initMainGroupOptions() {
-      var select = document.getElementById("mainGroup");
-      if (!select) return;
-      Object.keys(GROUPS_CONFIG).forEach(function(groupName) {
-        var option = document.createElement("option");
-        option.value = groupName;
-        option.textContent = groupName;
-        select.appendChild(option);
-      });
-    }
-
-    function initMemberCards() {
-      var container = document.getElementById("membersContainer");
-      if (!container) return;
-      var html = "";
-      for (var i = 1; i <= CONFIG.memberCount; i++) {
-        var label = (i === 1) ? "العضو الأول (الي من الاوائل)" : "العضو " + CONFIG.arabicOrdinals[i - 1];
-        var icon = (i === 1) ? "fa-user-tie" : "fa-user";
-        html += '<div class="member-card">';
-        html += '<div class="member-header"><i class="fa-solid ' + icon + '"></i> ' + label + '</div>';
-        html += '<div class="member-grid">';
-        CONFIG.fields.forEach(function(field) {
-          html += '<div class="field-block">';
-          html += '<label>' + CONFIG.fieldLabels[field] + '</label>';
-          html += '<input type="' + (field === "phone" ? "tel" : "text") + '" ';
-          html += 'name="member' + i + '_' + field + '" ';
-          html += 'class="' + CONFIG.fieldClasses[field] + '" ';
-          html += 'placeholder="' + CONFIG.placeholders[field] + '" ';
-          if (field === "phone") html += 'maxlength="' + CONFIG.phoneLength + '" ';
-          html += 'required>';
-          html += '</div>';
-        });
-        html += '</div></div>';
-      }
-      container.innerHTML = html;
-    }
-
-    document.addEventListener("DOMContentLoaded", function() {
-      initMainGroupOptions();
-      initMemberCards();
-
-      var savedStep = StorageManager.restore();
+      const savedStep = StorageService.restore();
       if (savedStep > 1) {
         Wizard.goTo(savedStep, true);
       }
 
-      fetchTakenGroups();
+      ApiService.fetchTakenGroups();
 
-      document.getElementById("multiStepForm").addEventListener("input", function() {
-        StorageManager.save(Wizard.getCurrentStep());
-      });
-      document.getElementById("multiStepForm").addEventListener("change", function() {
-        StorageManager.save(Wizard.getCurrentStep());
-      });
+      // حفظ تلقائي فوري مع تأخير ذكي (Debounce) لمنع الضغط الزائد
+      let debounceTimer;
+      const handleInput = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => StorageService.save(Wizard.currentStep), 150);
+      };
+
+      DOM.form?.addEventListener("input", handleInput);
+      DOM.form?.addEventListener("change", () => StorageService.save(Wizard.currentStep));
     });
   </script>
 
