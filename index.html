@@ -595,6 +595,93 @@
 
     var takenGroups = [];
 
+    // إدارة الحفظ التلقائي في ذاكرة المتصفح
+    var StorageManager = (function() {
+      var STORAGE_KEY = "EDUNEERS_PROJECT_FORM_DRAFT";
+
+      function save(currentStep) {
+        try {
+          var data = {
+            step: currentStep || 1,
+            agreeRules: document.getElementById("agreeRules") ? document.getElementById("agreeRules").checked : false,
+            mainGroup: document.getElementById("mainGroup") ? document.getElementById("mainGroup").value : "",
+            teamGroup: document.getElementById("teamGroup") ? document.getElementById("teamGroup").value : "",
+            teamName: document.getElementById("teamName") ? document.getElementById("teamName").value : "",
+            comments: document.getElementById("comments") ? document.getElementById("comments").value : "",
+            members: {}
+          };
+
+          for (var i = 1; i <= CONFIG.memberCount; i++) {
+            var nameEl = document.querySelector('[name="member' + i + '_name"]');
+            var codeEl = document.querySelector('[name="member' + i + '_code"]');
+            var phoneEl = document.querySelector('[name="member' + i + '_phone"]');
+            data.members['member' + i + '_name'] = nameEl ? nameEl.value : "";
+            data.members['member' + i + '_code'] = codeEl ? codeEl.value : "";
+            data.members['member' + i + '_phone'] = phoneEl ? phoneEl.value : "";
+          }
+
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch(e) {}
+      }
+
+      function restore() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return 1;
+          var data = JSON.parse(raw);
+          if (!data) return 1;
+
+          if (data.agreeRules && document.getElementById("agreeRules")) {
+            document.getElementById("agreeRules").checked = true;
+          }
+
+          if (data.mainGroup && document.getElementById("mainGroup")) {
+            document.getElementById("mainGroup").value = data.mainGroup;
+            handleMainGroupChange();
+            if (data.teamGroup && document.getElementById("teamGroup")) {
+              document.getElementById("teamGroup").value = data.teamGroup;
+            }
+          }
+
+          if (data.teamName && document.getElementById("teamName")) {
+            document.getElementById("teamName").value = data.teamName;
+          }
+
+          if (data.comments && document.getElementById("comments")) {
+            document.getElementById("comments").value = data.comments;
+          }
+
+          if (data.members) {
+            for (var i = 1; i <= CONFIG.memberCount; i++) {
+              var nameEl = document.querySelector('[name="member' + i + '_name"]');
+              var codeEl = document.querySelector('[name="member' + i + '_code"]');
+              var phoneEl = document.querySelector('[name="member' + i + '_phone"]');
+              if (nameEl && data.members['member' + i + '_name']) nameEl.value = data.members['member' + i + '_name'];
+              if (codeEl && data.members['member' + i + '_code']) codeEl.value = data.members['member' + i + '_code'];
+              if (phoneEl && data.members['member' + i + '_phone']) phoneEl.value = data.members['member' + i + '_phone'];
+            }
+          }
+
+          updateCodePlaceholders();
+          return data.step || 1;
+        } catch(e) {
+          return 1;
+        }
+      }
+
+      function clear() {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch(e) {}
+      }
+
+      return {
+        save: save,
+        restore: restore,
+        clear: clear
+      };
+    })();
+
     // جلب الفرق المحجوزة من الشيت
     function fetchTakenGroups() {
       if (!SCRIPT_URL) return;
@@ -635,18 +722,26 @@
         if (target) target.classList.add("active");
       }
 
-      function goTo(step) {
-        if (step > currentStep && !Validation.validateStep(currentStep)) return;
+      function goTo(step, skipValidation) {
+        if (!skipValidation && step > currentStep && !Validation.validateStep(currentStep)) return;
         currentStep = step;
         showStep(step);
         updateStepper();
         if (step === 2) fetchTakenGroups();
         if (step === 4) Review.build();
         if (step === 3) updateCodePlaceholders();
+        StorageManager.save(currentStep);
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
-      return { goTo: goTo };
+      function getCurrentStep() {
+        return currentStep;
+      }
+
+      return {
+        goTo: goTo,
+        getCurrentStep: getCurrentStep
+      };
     })();
 
     var Validation = (function() {
@@ -807,6 +902,7 @@
         })
         .then(function(res) {
           if (res && res.result === "success") {
+            StorageManager.clear();
             showSuccess();
           } else {
             alert(res.error || "حدث خطأ أثناء التسجيل");
@@ -845,6 +941,7 @@
       var mainGroup = document.getElementById("mainGroup").value;
       var teamSelect = document.getElementById("teamGroup");
       var helper = document.getElementById("groupHelper");
+      var prevSelectedTeam = teamSelect.value;
       
       teamSelect.innerHTML = '<option value="" disabled selected>اختر رمز الفريق المتاح...</option>';
       
@@ -864,12 +961,24 @@
           var opt = document.createElement("option");
           opt.value = teamCode;
           opt.textContent = teamCode;
+          if (teamCode === prevSelectedTeam) {
+            opt.selected = true;
+          }
           teamSelect.appendChild(opt);
           availableCount++;
         }
       }
 
       teamSelect.disabled = false;
+      if (prevSelectedTeam) {
+        for (var j = 0; j < teamSelect.options.length; j++) {
+          if (teamSelect.options[j].value === prevSelectedTeam) {
+            teamSelect.selectedIndex = j;
+            break;
+          }
+        }
+      }
+
       if (availableCount === 0) {
         helper.innerHTML = '<span style="color: var(--danger);"><i class="fa-solid fa-circle-xmark"></i> للأسف، جميع فرق هذا الجروب تم حجزها بالكامل!</span>';
       } else {
@@ -937,7 +1046,22 @@
     document.addEventListener("DOMContentLoaded", function() {
       initMainGroupOptions();
       initMemberCards();
+
+      // استعادة البيانات والخطوة المحفوظة تلقائياً
+      var savedStep = StorageManager.restore();
+      if (savedStep > 1) {
+        Wizard.goTo(savedStep, true);
+      }
+
       fetchTakenGroups();
+
+      // حفظ تلقائي عند أي تعديل أو كتابة
+      document.getElementById("multiStepForm").addEventListener("input", function() {
+        StorageManager.save(Wizard.getCurrentStep());
+      });
+      document.getElementById("multiStepForm").addEventListener("change", function() {
+        StorageManager.save(Wizard.getCurrentStep());
+      });
     });
   </script>
 
