@@ -556,7 +556,6 @@
   </div>
 
   <script>
-    // رابط سكربت Google Apps Script المباشر
     var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9YRUTOhQ_Kxl_aFytWDS_nhqc-VPzthGZkmoXKOpaQve9FVCSLdI5yuo60bmYK-dxQA/exec";
 
     var GROUPS_CONFIG = {
@@ -569,8 +568,8 @@
       "Group G": 10,
       "Group H": 10,
       "Group I": 10,
-      "Group J": 11, // من J1 إلى J11
-      "Group K": 10, // من K1 إلى K10
+      "Group J": 11,
+      "Group K": 10,
       "Group L": 10,
       "Group M": 10,
       "Group N": 10,
@@ -595,7 +594,6 @@
 
     var takenGroups = [];
 
-    // إدارة الحفظ التلقائي في ذاكرة المتصفح
     var StorageManager = (function() {
       var STORAGE_KEY = "EDUNEERS_PROJECT_FORM_DRAFT";
 
@@ -675,21 +673,20 @@
         } catch(e) {}
       }
 
-      return {
-        save: save,
-        restore: restore,
-        clear: clear
-      };
+      return { save: save, restore: restore, clear: clear };
     })();
 
-    // جلب الفرق المحجوزة من الشيت
+    // جلب الفرق المحجوزة مباشرة مع منع كاش المتصفح
     function fetchTakenGroups() {
       if (!SCRIPT_URL) return;
-      fetch(SCRIPT_URL + "?action=getTaken")
+      var urlWithTimestamp = SCRIPT_URL + "?action=getTaken&_t=" + new Date().getTime();
+      fetch(urlWithTimestamp)
         .then(function(res) { return res.json(); })
         .then(function(data) {
-          if (data && data.takenGroups) {
-            takenGroups = data.takenGroups;
+          if (data && Array.isArray(data.takenGroups)) {
+            takenGroups = data.takenGroups.map(function(item) {
+              return String(item).trim().toUpperCase();
+            });
             handleMainGroupChange();
           }
         })
@@ -738,10 +735,7 @@
         return currentStep;
       }
 
-      return {
-        goTo: goTo,
-        getCurrentStep: getCurrentStep
-      };
+      return { goTo: goTo, getCurrentStep: getCurrentStep };
     })();
 
     var Validation = (function() {
@@ -881,7 +875,7 @@
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق وحفظ البيانات...';
 
         var payload = collectData();
-        var targetUrl = (typeof SCRIPT_URL !== "undefined") ? SCRIPT_URL : "https://script.google.com/macros/s/AKfycbw9YRUTOhQ_Kxl_aFytWDS_nhqc-VPzthGZkmoXKOpaQve9FVCSLdI5yuo60bmYK-dxQA/exec";
+        var targetUrl = SCRIPT_URL;
 
         fetch(targetUrl, {
           method: "POST",
@@ -908,6 +902,7 @@
             alert(res.error || "حدث خطأ أثناء التسجيل");
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
+            fetchTakenGroups();
           }
         })
         .catch(function(err) {
@@ -934,14 +929,14 @@
 
     function getGroupLetter() {
       var group = document.getElementById("mainGroup").value;
-      return group ? group.replace("Group ", "").trim() : "";
+      return group ? group.replace("Group ", "").trim().toUpperCase() : "";
     }
 
     function handleMainGroupChange() {
       var mainGroup = document.getElementById("mainGroup").value;
       var teamSelect = document.getElementById("teamGroup");
       var helper = document.getElementById("groupHelper");
-      var prevSelectedTeam = teamSelect.value;
+      var prevSelectedTeam = teamSelect.value ? teamSelect.value.toUpperCase() : "";
       
       teamSelect.innerHTML = '<option value="" disabled selected>اختر رمز الفريق المتاح...</option>';
       
@@ -956,7 +951,8 @@
       var availableCount = 0;
 
       for (var i = 1; i <= count; i++) {
-        var teamCode = letter + i;
+        var teamCode = (letter + i).toUpperCase();
+        // إذا كان الفريق مسجل في takenGroups يتم حذفه من الاختيارات
         if (takenGroups.indexOf(teamCode) === -1) {
           var opt = document.createElement("option");
           opt.value = teamCode;
@@ -1047,7 +1043,6 @@
       initMainGroupOptions();
       initMemberCards();
 
-      // استعادة البيانات والخطوة المحفوظة تلقائياً
       var savedStep = StorageManager.restore();
       if (savedStep > 1) {
         Wizard.goTo(savedStep, true);
@@ -1055,7 +1050,6 @@
 
       fetchTakenGroups();
 
-      // حفظ تلقائي عند أي تعديل أو كتابة
       document.getElementById("multiStepForm").addEventListener("input", function() {
         StorageManager.save(Wizard.getCurrentStep());
       });
