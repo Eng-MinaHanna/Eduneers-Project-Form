@@ -769,47 +769,44 @@
         return el ? el.value.trim() : "";
       }
 
-      function submit() {
+    function submit() {
         var btn = document.querySelector(".btn-submit");
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق وحفظ البيانات...';
 
         var payload = collectData();
 
-        if (typeof google !== "undefined" && google.script && google.script.run) {
-          google.script.run
-            .withSuccessHandler(function(res) {
-              if (res && res.result === "success") {
-                showSuccess();
-              } else {
-                alert(res.error || "حدث خطأ أثناء التسجيل");
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
+        fetch(SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify(payload),
+          headers: { "Content-Type": "text/plain;charset=utf-8" }
+        })
+        .then(function(r) {
+          return r.text().then(function(text) {
+            try {
+              return JSON.parse(text);
+            } catch(e) {
+              if (text.indexOf("<html") !== -1 || text.indexOf("<!DOCTYPE") !== -1) {
+                throw new Error("يرجى التأكد من ضبط صلاحيات السكربت على (Anyone) في Apps Script وعمل New Version.");
               }
-            })
-            .withFailureHandler(function(err) {
-              alert("حدث خطأ أثناء الإرسال: " + err.message);
-              btn.disabled = false;
-              btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
-            })
-            .submitForm(payload);
-        } else {
-          fetch(window.location.href, {
-            method: "POST",
-            body: JSON.stringify(payload),
-            headers: { "Content-Type": "text/plain" }
-          })
-          .then(function(r) { return r.json(); })
-          .then(function(res) {
-            if (res && res.result === "success") showSuccess();
-            else throw new Error(res.error || "حدث خطأ");
-          })
-          .catch(function(err) {
-            alert("حدث خطأ: " + err.message);
+              throw new Error("استجابة غير صحيحة من السيرفر.");
+            }
+          });
+        })
+        .then(function(res) {
+          if (res && res.result === "success") {
+            showSuccess();
+          } else {
+            alert(res.error || "حدث خطأ أثناء التسجيل");
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
-          });
-        }
+          }
+        })
+        .catch(function(err) {
+          alert("حدث خطأ أثناء الإرسال: " + err.message);
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال التسجيل';
+        });
       }
 
       function showSuccess() {
